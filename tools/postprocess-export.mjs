@@ -86,3 +86,22 @@ if (fs.existsSync(CONTENT_DIR)) {
 }
 
 console.log(`Post-processed export: renamed ${htmlTargets.length} .md.html files and removed ${txtTargets.length} .md.txt files.`)
+
+// Ensure every page directory also has an index.html so trailing-slash URLs
+// (e.g. /human_face_detect/) resolve on static hosts. Next with
+// `trailingSlash: false` only produces <dir>.html, not <dir>/index.html.
+let dirIndexes = 0
+walk(OUT_DIR, (filePath) => {
+  const rel = toUnixPath(path.relative(OUT_DIR, filePath))
+  if (!rel.endsWith('/index.md')) return
+  const dir = path.dirname(filePath)
+  const sibling = `${dir}.html`
+  const target = path.join(dir, 'index.html')
+  if (fs.existsSync(target)) return
+  if (!fs.existsSync(sibling)) return
+  fs.copyFileSync(sibling, target)
+  dirIndexes += 1
+})
+if (dirIndexes > 0) {
+  console.log(`Wrote ${dirIndexes} directory index.html files for trailing-slash URLs.`)
+}
