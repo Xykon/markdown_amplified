@@ -37,12 +37,12 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
 
       // Match github-slugger (used by rehype-slug): lowercase, drop chars
       // that are not alphanumeric / whitespace / `-` / `_`, then turn
-      // whitespace runs into single `-`. Do NOT collapse repeated `-`.
+      // EACH whitespace char into `-` (do not collapse runs, do not trim
+      // leading/trailing `-`).
       let base = text
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/^-+|-+$/g, '')
+        .replace(/\s/g, '-')
 
       // De-duplicate the same way github-slugger does: foo, foo-1, foo-2…
       const seen = slugCounts.get(base) || 0
