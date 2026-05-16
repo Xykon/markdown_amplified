@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "comment": "Password-protect everything in the 'internal/' directory",
+      "match": "internal/",
+      "password": "changeme"
+    },
+    {
+      "comment": "A single file available only during a specific date window",
+      "match": "announcements/product-launch.md",
+      "validFrom": "2025-09-01",
+      "validUntil": "2025-09-30"
+    },
+    {
+      "comment": "A file that becomes available on a future date and stays available",
+      "match": "announcements/hiring-freeze.md",
+      "validFrom": "2025-10-15"
+    },
+    {
+      "comment": "A file that was available until a past date and is now gone",
+      "match": "announcements/old-offer.md",
+      "validUntil": "2025-06-01"
+    },
+    {
+      "comment": "Password + date range combined: board pack available only during the meeting week",
+      "match": "board/q3-pack.md",
+      "password": "board2025",
+      "validFrom": "2025-09-08",
+      "validUntil": "2025-09-12"
+    },
+    {
+      "comment": "Per-file override: one public file inside an otherwise protected directory (no password, no dates)",
+      "match": "internal/welcome.md"
+    }
+  ]
+}

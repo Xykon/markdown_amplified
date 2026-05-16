@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { getActiveContentDir } from '../content-source.mjs'
+import { loadSecurityRules, findRule, isWithinDateRange } from '../lib/security.mjs'
 
 const OUT_DIR = path.join(process.cwd(), 'out')
 const DOWNLOADS_DIR = path.join(OUT_DIR, 'downloads')
@@ -53,7 +54,9 @@ for (const txtFile of txtTargets) {
 
 // Copy markdown files to downloads/, and copy non-markdown asset files
 // (images, etc.) alongside their pages so relative references resolve.
+// Password-protected and date-expired files are excluded from downloads/.
 const CONTENT_DIR = getActiveContentDir()
+const securityRules = loadSecurityRules()
 
 if (fs.existsSync(CONTENT_DIR)) {
   if (!fs.existsSync(DOWNLOADS_DIR)) {
@@ -61,11 +64,17 @@ if (fs.existsSync(CONTENT_DIR)) {
   }
 
   let copiedMd = 0
+  let skippedMd = 0
   let copiedAssets = 0
   walk(CONTENT_DIR, (src) => {
     const rel = toUnixPath(path.relative(CONTENT_DIR, src))
 
     if (rel.endsWith('.md')) {
+      const rule = findRule(rel, securityRules)
+      if (rule?.password || (rule && !isWithinDateRange(rule))) {
+        skippedMd += 1
+        return
+      }
       const dest = path.join(DOWNLOADS_DIR, rel)
       fs.mkdirSync(path.dirname(dest), { recursive: true })
       fs.copyFileSync(src, dest)
@@ -82,6 +91,7 @@ if (fs.existsSync(CONTENT_DIR)) {
   })
 
   console.log(`Copied ${copiedMd} markdown files to downloads directory.`)
+  if (skippedMd > 0) console.log(`Skipped ${skippedMd} protected markdown files from downloads.`)
   console.log(`Copied ${copiedAssets} asset files to export root.`)
 }
 

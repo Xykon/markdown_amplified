@@ -13,6 +13,7 @@ This project renders markdown documents from the `content/` directory with a fal
 - Table of contents sidebar with desktop/mobile toggle
 - Download button for source markdown files
 - Light/dark theme toggle with persistence
+- Per-file and per-directory security: password protection and date-range gating
 
 ## Table of Contents
 
@@ -22,11 +23,12 @@ This project renders markdown documents from the `content/` directory with a fal
 4. [Project Structure](#project-structure)
 5. [Local Development](#local-development)
 6. [Build and Export](#build-and-export)
-7. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-8. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-9. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-10. [Operational Notes](#operational-notes)
-11. [Troubleshooting](#troubleshooting)
+7. [Content Security](#content-security)
+8. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
+9. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+10. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+11. [Operational Notes](#operational-notes)
+12. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -76,6 +78,7 @@ app/
 		MarkdownRenderer.js  # Markdown, highlighting, Mermaid rendering
 	Header.js              # Top bar actions
 	MarkdownShell.js       # Shared shell with TOC state/layout
+	SecurityGate.js        # Client-side password and date-range gate
 	TableOfContents.js     # TOC generation and active heading tracking
 	ThemeContext.js        # Theme persistence and toggle
 	globals.css            # Full UI and token styling
@@ -89,6 +92,12 @@ content.default/
 	sample.md
 	README.md
 	...starter docs shown when content/ is empty
+
+content-security.json          # Security rules (create from .example)
+content-security.json.example  # Annotated example covering all rule types
+
+lib/
+	security.mjs           # Build-time rule matching and AES-256-GCM encryption
 
 tools/
 	postprocess-export.mjs # Renames .md.html -> .md and cleans .md.txt
@@ -128,6 +137,74 @@ Post-process behavior in `tools/postprocess-export.mjs`:
 - Renames `*.md.html` -> `*.md`
 - Removes `*.md.txt`
 - Copies original markdown files into `out/downloads/` for the download button
+
+## Content Security
+
+Individual files or entire directories can be protected with a password, restricted to a date range, or both. Security rules are defined in `content-security.json` at the project root.
+
+### Setup
+
+Copy the example file and edit it:
+
+```bash
+cp content-security.json.example content-security.json
+```
+
+Then rebuild the site. Security is applied entirely at build time — no runtime server is required.
+
+### Rule format
+
+```json
+{
+  "rules": [
+    {
+      "match": "internal/",
+      "password": "hunter2"
+    },
+    {
+      "match": "announcements/launch.md",
+      "validFrom": "2025-09-01",
+      "validUntil": "2025-09-30"
+    },
+    {
+      "match": "board/q3-pack.md",
+      "password": "board2025",
+      "validFrom": "2025-09-08",
+      "validUntil": "2025-09-12"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `match` | Path relative to your content directory. End with `/` to match an entire directory. |
+| `password` | Protects the file with a password. |
+| `validFrom` | ISO date (e.g. `2025-09-01`). File is unavailable before this date. |
+| `validUntil` | ISO date. File is unavailable after this date. |
+| `comment` | Optional human note — ignored by the build. |
+
+All fields except `match` are optional and can be combined freely.
+
+### How it works
+
+**Password protection** — the markdown source is encrypted with AES-256-GCM during the build (key derived via PBKDF2, 100 000 iterations). The ciphertext is embedded in the page. A password prompt is shown in the browser; on the correct entry the content is decrypted and rendered client-side. The password is cached in `sessionStorage` so it only needs to be entered once per browser session.
+
+**Date gating** — files outside their `validFrom`/`validUntil` window are excluded from the build entirely (no HTML is generated for them) and also checked client-side on page load. A rebuild is required for a date gate to take effect — see [Enforcing date gates](#enforcing-date-gates) below.
+
+**Download button** — password-protected files are excluded from `out/downloads/` and the download button is hidden, so the source markdown cannot be retrieved by bypassing the password prompt.
+
+**Rule precedence** — the most specific match wins. A rule for `internal/welcome.md` overrides a rule for `internal/`. A rule with no `password` and no dates makes a file publicly accessible even inside a protected directory.
+
+### Enforcing date gates
+
+Because the site is static, date gates only take effect when the site is (re)built. A file unlocked with `validFrom: "2025-09-01"` will not appear until the site is rebuilt on or after that date; a file with `validUntil: "2025-09-30"` will not disappear until the next rebuild after that date.
+
+To automate this, configure a scheduled build in AWS Amplify Console (**App settings → Build settings → Scheduled builds**) timed to coincide with each gate transition.
+
+### Security limitations
+
+This is client-side security. It is meaningfully stronger than filename obscurity — password-protected content is genuinely encrypted and not present in the HTML source — but it is not a substitute for server-side access control. A determined attacker with the ciphertext and enough time could attempt an offline brute-force attack against a weak password. Use a strong, random password for anything genuinely sensitive, and consider Tier 2 (CloudFront Functions or Lambda@Edge) for stricter requirements.
 
 ## Deployment to AWS Amplify
 
@@ -223,10 +300,10 @@ If you also maintain changes in the private repo, this merge-based flow keeps hi
 
 ## Operational Notes
 
-- Filename obscurity is not security. Treat private content as sensitive and keep it in private infrastructure.
+- Filename obscurity is not security. Use `content-security.json` rules for meaningful access control, or keep truly sensitive content in private infrastructure.
 - Prefer URL-safe filenames where possible to avoid host/CDN edge-case behavior.
 - Spaces and parentheses are supported with proper URL encoding and route decoding.
-- Download button reads from `out/downloads/` (generated during build).
+- Download button reads from `out/downloads/` (generated during build). Password-protected files are excluded from this directory automatically.
 
 ## Troubleshooting
 

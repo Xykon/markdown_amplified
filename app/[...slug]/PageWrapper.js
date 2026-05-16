@@ -1,7 +1,15 @@
 'use client'
 
-import MarkdownShell from '../MarkdownShell'
+import SecurityGate from '../SecurityGate'
 
-export default function MarkdownPageWrapper({ slug, content }) {
-  return <MarkdownShell slug={slug} content={content} />
+export default function MarkdownPageWrapper({ slug, content, encrypted, validFrom, validUntil }) {
+  return (
+    <SecurityGate
+      slug={slug}
+      content={content}
+      encrypted={encrypted}
+      validFrom={validFrom}
+      validUntil={validUntil}
+    />
+  )
 }

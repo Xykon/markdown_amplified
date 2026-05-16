@@ -3,15 +3,20 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getActiveContentDir, getActiveMarkdownFiles } from '../../content-source.mjs'
+import { loadSecurityRules, findRule, isWithinDateRange, encryptContent } from '../../lib/security.mjs'
 
 // Only pre-generated paths are valid; all others return 404
 export const dynamicParams = false
 
 export async function generateStaticParams() {
   const files = getActiveMarkdownFiles()
+  const rules = loadSecurityRules()
   const params = []
 
   for (const file of files) {
+    const rule = findRule(file, rules)
+    if (rule && !isWithinDateRange(rule)) continue
+
     const segments = file.split('/')
     params.push({ slug: segments })
 
@@ -73,7 +78,28 @@ export default async function MarkdownPage({ params }) {
     notFound()
   }
 
-  const content = fs.readFileSync(filePath, 'utf-8')
+  const rules = loadSecurityRules()
+  const rule = findRule(relativeFile, rules)
 
-  return <PageWrapper slug={decodedSlug} content={content} />
+  if (rule && !isWithinDateRange(rule)) notFound()
+
+  const rawContent = fs.readFileSync(filePath, 'utf-8')
+
+  let content = rawContent
+  let encrypted = null
+
+  if (rule?.password) {
+    encrypted = await encryptContent(rawContent, rule.password)
+    content = null
+  }
+
+  return (
+    <PageWrapper
+      slug={decodedSlug}
+      content={content}
+      encrypted={encrypted ?? undefined}
+      validFrom={rule?.validFrom ?? undefined}
+      validUntil={rule?.validUntil ?? undefined}
+    />
+  )
 }
