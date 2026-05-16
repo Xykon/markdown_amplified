@@ -3,7 +3,8 @@ import path from 'path'
 import { getActiveContentDir } from '../content-source.mjs'
 import { loadSecurityRules, findRule, isWithinDateRange } from '../lib/security.mjs'
 
-const OUT_DIR = path.join(process.cwd(), 'out')
+const REPO_ROOT = path.resolve(process.cwd())
+const OUT_DIR = path.join(REPO_ROOT, 'out')
 const DOWNLOADS_DIR = path.join(OUT_DIR, 'downloads')
 
 function walk(dir, callback) {
@@ -14,7 +15,18 @@ function walk(dir, callback) {
       walk(fullPath, callback)
       continue
     }
-
+    if (entry.isSymbolicLink()) {
+      try {
+        const resolved = fs.realpathSync(fullPath)
+        const withinRepo = resolved === REPO_ROOT || resolved.startsWith(REPO_ROOT + path.sep)
+        if (withinRepo && fs.statSync(resolved).isDirectory()) {
+          walk(fullPath, callback)
+          continue
+        }
+      } catch {
+        continue
+      }
+    }
     callback(fullPath)
   }
 }
