@@ -19,11 +19,20 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
 
     if (segments.length === 0) return
 
-    const fileName = segments[segments.length - 1]
+    // If the slug points at a directory (no .md on the last segment),
+    // resolve it to the directory's index.md, the same way the page
+    // route does. Otherwise the download link would point at a folder
+    // under /downloads/ instead of an actual markdown file.
+    const lastSegment = segments[segments.length - 1]
+    const resolvedSegments = lastSegment.toLowerCase().endsWith('.md')
+      ? segments
+      : [...segments, 'index.md']
+
+    const fileName = resolvedSegments[resolvedSegments.length - 1]
     if (!fileName) return
 
     // Download from the downloads directory (supports nested paths)
-    const encodedPath = segments.map((segment) => encodeURIComponent(segment)).join('/')
+    const encodedPath = resolvedSegments.map((segment) => encodeURIComponent(segment)).join('/')
     const downloadUrl = `/downloads/${encodedPath}`
 
     const a = document.createElement('a')
