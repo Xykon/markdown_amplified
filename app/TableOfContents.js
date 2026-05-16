@@ -7,28 +7,49 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
   const [activeId, setActiveId] = useState(null)
 
   useEffect(() => {
-    // Extract headings from markdown content using regex
-    const headingRegex = /^(#{1,6})\s+(.+)$/gm
+    // Walk the markdown line by line so we can skip fenced code blocks,
+    // otherwise comments like `# foo` inside ```python blocks get picked
+    // up as fake h1 entries with no matching anchor in the rendered page.
     const matches = []
-    let match
+    const slugCounts = new Map()
+    const lines = content.split('\n')
+    let fence = null // current fence marker: '```' or '~~~' or null
 
-    while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length // 1-6
-      const text = match[2].trim()
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/\r$/, '')
+      const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})/)
+      if (fenceMatch) {
+        const marker = fenceMatch[1][0].repeat(3)
+        if (fence === null) {
+          fence = marker
+        } else if (marker === fence) {
+          fence = null
+        }
+        continue
+      }
+      if (fence !== null) continue
 
-      // Convert heading text to ID (matches what rehypeSlug does)
-      const id = text
+      const headingMatch = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/)
+      if (!headingMatch) continue
+
+      const level = headingMatch[1].length
+      const text = headingMatch[2].trim()
+
+      // Match github-slugger (used by rehype-slug): lowercase, drop chars
+      // that are not alphanumeric / whitespace / `-` / `_`, then turn
+      // whitespace runs into single `-`. Do NOT collapse repeated `-`.
+      let base = text
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
         .replace(/^-+|-+$/g, '')
 
-      matches.push({
-        level: parseInt(level),
-        text,
-        id,
-      })
+      // De-duplicate the same way github-slugger does: foo, foo-1, foo-2…
+      const seen = slugCounts.get(base) || 0
+      const id = seen === 0 ? base : `${base}-${seen}`
+      slugCounts.set(base, seen + 1)
+
+      matches.push({ level, text, id })
     }
 
     setHeadings(matches)
