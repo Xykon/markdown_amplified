@@ -2,7 +2,10 @@
 
 This site hosts Markdown files and renders them as readable web pages.
 
-Files are stored in GitHub and published with AWS Amplify™. By default, only files that are linked or shared are discoverable.
+Files are stored in a private GitHub repository and published with AWS Amplify™. 
+Only files that are linked in index.md are publicly discoverable.
+Private files can be shared via full URL to the filename.
+
 
 ## Project Links
 
@@ -10,6 +13,7 @@ Files are stored in GitHub and published with AWS Amplify™. By default, only f
 - License: [MIT License](https://github.com/Xykon/markdown_amplified/blob/main/LICENSE)
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
 - Project documentation: [README.md](/README.md)
+- Private file example link: https://markdown-amplified.ehlers.tv/sample.md
 
 ## Copyright and Legal Notices
 
