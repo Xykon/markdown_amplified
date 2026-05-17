@@ -215,6 +215,28 @@ Password protection is a hybrid of server and client. The server refuses to serv
 
 By default the site reads markdown files from the local `content/` directory (or `content.default/`). Setting the `S3_BUCKET` environment variable switches to an S3 backend — all file reads happen at request time from the specified bucket, with no local content needed in the deployed bundle.
 
+### Create the S3 bucket
+
+In the AWS Console, go to **S3 → Create bucket**.
+
+**General configuration**
+- **Bucket name** — choose a globally unique name (e.g. `my-site-content`). Note it down; you will set it as `S3_BUCKET`.
+- **AWS Region** — choose the same region as your Amplify app to minimise latency (e.g. `eu-west-1`).
+
+**Object Ownership**
+- Leave at **ACLs disabled (recommended)**. The app authenticates via an IAM role, not ACLs.
+
+**Block Public Access settings**
+- Leave all four **Block Public Access** checkboxes **enabled** (the default). The Amplify Lambda reads objects using its IAM role; the bucket does not need to be public.
+
+**Bucket Versioning** — optional, off is fine.
+
+**Default encryption**
+- **Server-side encryption** — leave at **SSE-S3 (Amazon S3 managed keys)**. No action needed.
+- **Bucket key** — leave **enabled**.
+
+Leave all other settings at their defaults and click **Create bucket**.
+
 ### Environment variables
 
 | Variable | Required | Description |
@@ -222,7 +244,7 @@ By default the site reads markdown files from the local `content/` directory (or
 | `S3_BUCKET` | Yes (to enable S3 mode) | Name of the S3 bucket containing your markdown files. |
 | `S3_PREFIX` | No | Key prefix within the bucket (e.g. `docs/`). Trailing slash is added automatically if omitted. |
 
-The AWS credentials and region are picked up automatically from the environment. On Amplify, attach an IAM role to the app — no explicit `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` is needed.
+The AWS credentials and region are picked up automatically from the Lambda environment. On Amplify, attach an IAM role to the app — no explicit `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` is needed.
 
 ### Bucket structure
 
@@ -236,24 +258,131 @@ docs/guide/setup.md    → /guide/setup.md
 docs/guide/diagram.png → /asset/guide/diagram.png
 ```
 
+### Uploading files
+
+#### AWS Console
+
+1. Open your bucket in the S3 Console and click **Upload**.
+2. Click **Add files** or **Add folder** and select your content.
+3. Leave all upload settings (permissions, storage class, encryption) at their defaults and click **Upload**.
+
+The key (path) of each object must match the structure described in [Bucket structure](#bucket-structure). If you are uploading a folder, the Console preserves the local folder hierarchy automatically.
+
+#### AWS CLI — single file
+
+```bash
+aws s3 cp path/to/index.md s3://YOUR_BUCKET/docs/index.md
+```
+
+#### AWS CLI — sync a local directory
+
+The most common workflow: keep a local `content/` directory and sync it to the bucket prefix in one command.
+
+```bash
+aws s3 sync ./content s3://YOUR_BUCKET/docs/ \
+  --delete
+```
+
+- `--delete` removes objects from the bucket that no longer exist locally. Omit it if you want to keep old files.
+- Re-run the same command whenever you add, edit, or remove files — only changed files are transferred.
+- For a dry run that shows what would change without uploading, add `--dryrun`.
+
+#### AWS CLI — remove a file
+
+```bash
+aws s3 rm s3://YOUR_BUCKET/docs/old-page.md
+```
+
+#### Checking what is in the bucket
+
+```bash
+aws s3 ls s3://YOUR_BUCKET/docs/ --recursive
+```
+
 ### IAM permissions
 
-The Amplify execution role needs read-only access to the bucket:
+Amplify runs your SSR app inside a Lambda function under a service role. You need to attach an S3 read policy to that role.
+
+#### Step 1 — Enable the Amplify service role (if not already done)
+
+Amplify needs a service role before it can assume one for your app. If you have not set one up before:
+
+1. In the AWS Console, go to **IAM → Roles → Create role**.
+2. Select **AWS service** as the trusted entity type, then choose **Amplify** from the service list. Click **Next**.
+3. Skip adding permissions for now (you will add the S3 policy below). Give the role a name such as `AmplifySSRRole` and click **Create role**.
+4. In the Amplify Console, go to **App settings → General → Service role**, click **Edit**, select the role you just created, and save.
+
+If Amplify already shows a service role in App settings, skip this step.
+
+#### Step 2 — Find the role name
+
+**In the Amplify Console:**
+
+1. Go to **App settings → General** and note the **Service role** name shown there (e.g. `AmplifySSRRole`).
+
+**Or via the AWS CLI:**
+
+```bash
+aws amplify get-app --app-id <YOUR_APP_ID> \
+  --query 'app.iamServiceRoleArn' --output text
+```
+
+The role name is the last segment of the ARN after the final `/`.
+
+#### Step 3 — Attach the S3 policy
+
+**In the AWS Console:**
+
+1. Go to **IAM → Roles** and click the role name from Step 2.
+2. Click **Add permissions → Create inline policy**.
+3. Switch to the **JSON** editor and paste:
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": ["s3:GetObject", "s3:ListBucket"],
-  "Resource": [
-    "arn:aws:s3:::YOUR_BUCKET",
-    "arn:aws:s3:::YOUR_BUCKET/*"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::YOUR_BUCKET",
+        "arn:aws:s3:::YOUR_BUCKET/*"
+      ]
+    }
   ]
 }
 ```
 
+4. Replace `YOUR_BUCKET` with your bucket name. Click **Next**, give the policy a name such as `markdown-amplified-s3`, and click **Create policy**.
+
+**Or via the AWS CLI:**
+
+```bash
+aws iam put-role-policy \
+  --role-name <AMPLIFY_ROLE_NAME> \
+  --policy-name markdown-amplified-s3 \
+  --policy-document '{
+    "Version":"2012-10-17",
+    "Statement":[{
+      "Effect":"Allow",
+      "Action":["s3:GetObject","s3:ListBucket"],
+      "Resource":["arn:aws:s3:::YOUR_BUCKET","arn:aws:s3:::YOUR_BUCKET/*"]
+    }]
+  }'
+```
+
+`s3:GetObject` covers all file reads. `s3:ListBucket` is required for the content listing call used to discover available markdown files.
+
 ### Setting the variable on Amplify
 
-In the Amplify Console → App settings → Environment variables, add `S3_BUCKET` (and optionally `S3_PREFIX`). The change takes effect on the next deployment.
+In the Amplify Console → **App settings → Environment variables**, add:
+
+| Key | Value |
+|---|---|
+| `S3_BUCKET` | `your-bucket-name` |
+| `S3_PREFIX` | `docs/` (optional — omit if your files are at the bucket root) |
+
+Click **Save** and then trigger a new deployment (push a commit, or use **Redeploy this version** in the Amplify Console). The environment variables take effect on the next deployed build.
 
 `content-security.json` rules continue to work the same way — the path matched against the rules is always the relative path within the bucket prefix, identical to how it works with the filesystem backend.
 
