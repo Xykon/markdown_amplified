@@ -10,8 +10,13 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
   const [backUrl, setBackUrl] = useState(null)
 
   useEffect(() => {
-    const NAV_STACK_KEY = 'md-nav-stack'
+    const STACK_KEY = 'md-nav-stack'
+    const BACK_KEY  = 'md-nav-back'
     const current = window.location.href
+
+    // Consume the back-navigation flag set by the back button's onClick
+    const isBack = sessionStorage.getItem(BACK_KEY) === '1'
+    sessionStorage.removeItem(BACK_KEY)
 
     // Resolve a same-origin, different-page referrer, if any
     let ref = null
@@ -21,30 +26,30 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     } catch { /* ignore */ }
 
     if (!ref) {
-      // Entry point or same-page navigation — start a fresh stack
-      sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify([current]))
+      // Direct entry or same-page reload — start a fresh stack
+      sessionStorage.setItem(STACK_KEY, JSON.stringify([current]))
       setBackUrl(null)
       return
     }
 
     try {
-      const stack = JSON.parse(sessionStorage.getItem(NAV_STACK_KEY) || '[]')
-      const refIdx = stack.indexOf(ref)
+      const stack = JSON.parse(sessionStorage.getItem(STACK_KEY) || '[]')
 
-      if (refIdx >= 0) {
-        // ref is already in the stack — this is a backward navigation, pop back to it
-        const newStack = stack.slice(0, refIdx)
+      if (isBack) {
+        // Back-button click: ref is the page we just left — remove it from the stack
+        const idx = stack.lastIndexOf(ref)
+        const newStack = idx >= 0 ? stack.slice(0, idx) : []
         if (newStack[newStack.length - 1] !== current) newStack.push(current)
-        sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(newStack))
+        sessionStorage.setItem(STACK_KEY, JSON.stringify(newStack))
         setBackUrl(newStack.length > 1 ? newStack[newStack.length - 2] : null)
       } else {
-        // Forward navigation — push current page
+        // Forward navigation — push current page onto the stack
         const newStack = [...stack, current].slice(-50)
-        sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(newStack))
+        sessionStorage.setItem(STACK_KEY, JSON.stringify(newStack))
         setBackUrl(ref)
       }
     } catch {
-      sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify([current]))
+      sessionStorage.setItem(STACK_KEY, JSON.stringify([current]))
       setBackUrl(null)
     }
   }, [])
@@ -107,6 +112,7 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               href={backUrl}
               title="Back"
               aria-label="Go back"
+              onClick={() => sessionStorage.setItem('md-nav-back', '1')}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="19 18 14 12 19 6" />
