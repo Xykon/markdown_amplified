@@ -1,12 +1,22 @@
 'use client'
 
-import { useContext } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { ThemeContext } from './ThemeContext'
 
 const SOURCE_REPO_URL = 'https://github.com/Xykon/markdown_amplified'
 
 export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc }) {
   const theme = useContext(ThemeContext)
+  const [backUrl, setBackUrl] = useState(null)
+
+  useEffect(() => {
+    try {
+      const ref = document.referrer
+      if (ref && new URL(ref).origin === window.location.origin) {
+        setBackUrl(ref)
+      }
+    } catch { /* invalid referrer URL — ignore */ }
+  }, [])
 
   const downloadFile = () => {
     if (!slug) return
@@ -47,6 +57,19 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     <header className="app-header">
       <div className="header-content">
         <div className="header-left">
+          {backUrl && (
+            <a
+              className="header-button back-button"
+              href={backUrl}
+              title="Back"
+              aria-label="Go back"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span className="back-button-label">Back</span>
+            </a>
+          )}
           {hasToc && (
             <button
               className={`header-button toc-toggle-button ${tocOpen ? 'is-open' : ''}`}
