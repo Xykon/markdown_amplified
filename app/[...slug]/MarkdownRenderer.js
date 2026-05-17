@@ -571,7 +571,10 @@ export default function MarkdownRenderer({ content, slug }) {
             !href.endsWith('.md')
               ? `/asset/${assetBase ? assetBase + '/' : ''}${href}`
               : href
-          const isExternal = /^https?:\/\//i.test(resolved)
+          const isExternal = (() => {
+            if (!/^https?:\/\//i.test(resolved)) return false
+            try { return new URL(resolved).origin !== window.location.origin } catch { return true }
+          })()
           return (
             <a
               href={resolved}
