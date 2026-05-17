@@ -2,6 +2,8 @@ import { getContentProvider } from '../lib/content-provider.mjs'
 import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
 import SecurityGate from './SecurityGate'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const rules = await loadSecurityRules()
   const rule = findRule('index.md', rules)
