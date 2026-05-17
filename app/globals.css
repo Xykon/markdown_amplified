@@ -194,6 +194,7 @@ body {
   height: 18px;
 }
 
+.home-button,
 .back-button {
   text-decoration: none;
   width: 36px;

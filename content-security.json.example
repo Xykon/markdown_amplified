@@ -1,4 +1,6 @@
 {
+  "comment": "Optional global home button shown on every page. Values: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled). Default: disabled.",
+  "home": false,
   "rules": [
     {
       "comment": "Password-protect everything in the 'internal/' directory",
@@ -42,6 +44,26 @@
     {
       "comment": "Per-file override: one public file inside an otherwise protected directory (no password, no dates)",
       "match": "internal/welcome.md"
+    },
+    {
+      "comment": "Home button: show a home button linking to site root for everything in the docs/ folder",
+      "match": "docs/",
+      "home": "site"
+    },
+    {
+      "comment": "Home button: link back to the docs folder root for files nested inside it",
+      "match": "docs/api/",
+      "home": "folder"
+    },
+    {
+      "comment": "Home button: custom URL for a specific file",
+      "match": "reports/q3-summary.md",
+      "home": "https://example.com/reports/"
+    },
+    {
+      "comment": "Home button: explicitly disable for a file even if a parent rule or global default enables it",
+      "match": "docs/standalone.md",
+      "home": false
     }
   ]
 }

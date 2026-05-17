@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, findRule, findHomeUrl, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -38,8 +38,9 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : path.posix.join(requested, 'index.md')
 
-  const rules = await loadSecurityRules()
+  const [rules, globalHome] = await Promise.all([loadSecurityRules(), loadGlobalHome()])
   const rule = findRule(relativeFile, rules)
+  const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
 
   if (rule && !isWithinDateRange(rule)) notFound()
 
@@ -65,6 +66,7 @@ export default async function MarkdownPage({ params }) {
       validFrom={rule?.validFrom ?? undefined}
       validUntil={rule?.validUntil ?? undefined}
       hasDownload={isDownloadAllowed(rule)}
+      homeUrl={homeUrl ?? undefined}
     />
   )
 }

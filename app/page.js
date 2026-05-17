@@ -1,12 +1,13 @@
 import { getContentProvider } from '../lib/content-provider.mjs'
-import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, findRule, findHomeUrl, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
 import SecurityGate from './SecurityGate'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const rules = await loadSecurityRules()
+  const [rules, globalHome] = await Promise.all([loadSecurityRules(), loadGlobalHome()])
   const rule = findRule('index.md', rules)
+  const homeUrl = findHomeUrl('index.md', rules, globalHome)
 
   if (rule && !isWithinDateRange(rule)) return null
 
@@ -32,6 +33,7 @@ export default async function Home() {
       validFrom={rule?.validFrom ?? undefined}
       validUntil={rule?.validUntil ?? undefined}
       hasDownload={isDownloadAllowed(rule)}
+      homeUrl={homeUrl ?? undefined}
     />
   )
 }

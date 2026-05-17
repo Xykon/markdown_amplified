@@ -5,7 +5,7 @@ import { ThemeContext } from './ThemeContext'
 
 const SOURCE_REPO_URL = 'https://github.com/Xykon/markdown_amplified'
 
-export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc }) {
+export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
 
@@ -57,6 +57,19 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     <header className="app-header">
       <div className="header-content">
         <div className="header-left">
+          {homeUrl && (
+            <a
+              className="header-button home-button"
+              href={homeUrl}
+              title="Home"
+              aria-label="Go to home"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" />
+                <polyline points="9 21 9 12 15 12 15 21" />
+              </svg>
+            </a>
+          )}
           {backUrl && (
             <a
               className="header-button back-button"
