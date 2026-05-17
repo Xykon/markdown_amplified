@@ -10,12 +10,43 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
   const [backUrl, setBackUrl] = useState(null)
 
   useEffect(() => {
+    const NAV_STACK_KEY = 'md-nav-stack'
+    const current = window.location.href
+
+    // Resolve a same-origin, different-page referrer, if any
+    let ref = null
     try {
-      const ref = document.referrer
-      if (ref && new URL(ref).origin === window.location.origin) {
+      const r = document.referrer
+      if (r && new URL(r).origin === window.location.origin && r !== current) ref = r
+    } catch { /* ignore */ }
+
+    if (!ref) {
+      // Entry point or same-page navigation — start a fresh stack
+      sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify([current]))
+      setBackUrl(null)
+      return
+    }
+
+    try {
+      const stack = JSON.parse(sessionStorage.getItem(NAV_STACK_KEY) || '[]')
+      const refIdx = stack.indexOf(ref)
+
+      if (refIdx >= 0) {
+        // ref is already in the stack — this is a backward navigation, pop back to it
+        const newStack = stack.slice(0, refIdx)
+        if (newStack[newStack.length - 1] !== current) newStack.push(current)
+        sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(newStack))
+        setBackUrl(newStack.length > 1 ? newStack[newStack.length - 2] : null)
+      } else {
+        // Forward navigation — push current page
+        const newStack = [...stack, current].slice(-50)
+        sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(newStack))
         setBackUrl(ref)
       }
-    } catch { /* invalid referrer URL — ignore */ }
+    } catch {
+      sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify([current]))
+      setBackUrl(null)
+    }
   }, [])
 
   const downloadFile = () => {
