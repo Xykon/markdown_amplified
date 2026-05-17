@@ -375,7 +375,7 @@ aws iam put-role-policy \
 
 ### Setting the variable on Amplify
 
-In the Amplify Console → **App settings → Environment variables**, add:
+In the Amplify Console → **Hosting → Environment variables**, add:
 
 | Key | Value |
 |---|---|
