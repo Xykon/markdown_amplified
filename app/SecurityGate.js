@@ -42,6 +42,24 @@ function sessionKey(encrypted) {
   return `md-unlock:${encrypted.ciphertext.slice(0, 24)}`
 }
 
+// Try every password cached from other protected pages in this session.
+// If one decrypts this ciphertext, cache it under the new key and return it.
+async function tryStoredPasswords(encrypted) {
+  const key = sessionKey(encrypted)
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i)
+    if (!k?.startsWith('md-unlock:') || k === key) continue
+    const password = sessionStorage.getItem(k)
+    if (!password) continue
+    try {
+      const text = await decryptContent(encrypted, password)
+      sessionStorage.setItem(key, password)
+      return text
+    } catch { /* wrong password for this ciphertext — try next */ }
+  }
+  return null
+}
+
 function LockIcon() {
   return (
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -109,7 +127,14 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
           setPhase('password')
         })
     } else {
-      setPhase('password')
+      tryStoredPasswords(encrypted).then((text) => {
+        if (text !== null) {
+          setResolvedContent(text)
+          setPhase('open')
+        } else {
+          setPhase('password')
+        }
+      })
     }
   }, [])
 
