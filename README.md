@@ -27,10 +27,11 @@ This project renders markdown documents from the `content/` directory with a fal
 7. [Content Security](#content-security)
 8. [S3 Content Backend](#s3-content-backend)
 9. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-10. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-11. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-12. [Operational Notes](#operational-notes)
-13. [Troubleshooting](#troubleshooting)
+10. [S3 Deployment Workflow](#s3-deployment-workflow)
+11. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+12. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+13. [Operational Notes](#operational-notes)
+14. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -127,7 +128,7 @@ Open:
 
 ### Auto-restart on config changes
 
-Editing `content-security.json` (passwords, date ranges) requires a server restart to take effect, because encrypted content is cached in memory for performance. Install nodemon once and use the watch script to restart automatically whenever the config file changes:
+Security rules from `content-security.json` are cached in memory for 60 seconds. In local development the simplest way to force an immediate reload is to restart the server. Install nodemon once and use the watch script to restart automatically whenever the config file changes:
 
 ```bash
 npm install --save-dev nodemon
@@ -243,8 +244,11 @@ Leave all other settings at their defaults and click **Create bucket**.
 |---|---|---|
 | `S3_BUCKET` | Yes (to enable S3 mode) | Name of the S3 bucket containing your markdown files. |
 | `S3_PREFIX` | No | Key prefix within the bucket (e.g. `docs/`). Trailing slash is added automatically if omitted. |
+| `S3_REGION` | Yes | AWS region of the bucket (e.g. `eu-north-1`). |
+| `S3_ACCESS_KEY_ID` | Yes | Access key ID for the IAM user (see below). |
+| `S3_SECRET_ACCESS_KEY` | Yes | Secret access key for the IAM user (see below). |
 
-The AWS credentials and region are picked up automatically from the Lambda environment. On Amplify, attach an IAM role to the app — no explicit `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` is needed.
+These values are baked into the Lambda bundle at build time. Changing them requires a redeploy.
 
 ### Bucket structure
 
@@ -299,43 +303,15 @@ aws s3 rm s3://YOUR_BUCKET/docs/old-page.md
 aws s3 ls s3://YOUR_BUCKET/docs/ --recursive
 ```
 
-### IAM permissions
+### Create an IAM user for S3 access
 
-Amplify runs your SSR app inside a Lambda function under a service role. You need to attach an S3 read policy to that role.
+The Amplify WEB_COMPUTE Lambda cannot resolve credentials from the standard AWS credential chain, so an explicit IAM user with read-only S3 access is needed.
 
-#### Step 1 — Enable the Amplify service role (if not already done)
+#### Step 1 — Create the user
 
-Amplify needs a service role before it can assume one for your app. If you have not set one up before:
-
-1. In the AWS Console, go to **IAM → Roles → Create role**.
-2. Select **AWS service** as the trusted entity type, then choose **Amplify** from the service list. Click **Next**.
-3. Skip adding permissions for now (you will add the S3 policy below). Give the role a name such as `AmplifySSRRole` and click **Create role**.
-4. In the Amplify Console, go to **App settings → General → Service role**, click **Edit**, select the role you just created, and save.
-
-If Amplify already shows a service role in App settings, skip this step.
-
-#### Step 2 — Find the role name
-
-**In the Amplify Console:**
-
-1. Go to **App settings → General** and note the **Service role** name shown there (e.g. `AmplifySSRRole`).
-
-**Or via the AWS CLI:**
-
-```bash
-aws amplify get-app --app-id <YOUR_APP_ID> \
-  --query 'app.iamServiceRoleArn' --output text
-```
-
-The role name is the last segment of the ARN after the final `/`.
-
-#### Step 3 — Attach the S3 policy
-
-**In the AWS Console:**
-
-1. Go to **IAM → Roles** and click the role name from Step 2.
-2. Click **Add permissions → Create inline policy**.
-3. Switch to the **JSON** editor and paste:
+1. In the AWS Console, go to **IAM → Users → Create user**.
+2. Name it something like `markdown-amplified-s3-reader`. Leave **Provide user access to the AWS Management Console** unchecked — this user only needs programmatic access.
+3. On the permissions step, choose **Attach policies directly → Create policy**. Switch to the **JSON** editor and paste:
 
 ```json
 {
@@ -343,37 +319,29 @@ The role name is the last segment of the ARN after the final `/`.
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:ListBucket"],
-      "Resource": [
-        "arn:aws:s3:::YOUR_BUCKET",
-        "arn:aws:s3:::YOUR_BUCKET/*"
-      ]
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::YOUR_BUCKET/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::YOUR_BUCKET"
     }
   ]
 }
 ```
 
-4. Replace `YOUR_BUCKET` with your bucket name. Click **Next**, give the policy a name such as `markdown-amplified-s3`, and click **Create policy**.
+Replace `YOUR_BUCKET` with your bucket name. Save the policy (e.g. `markdown-amplified-s3`), attach it, and finish creating the user.
 
-**Or via the AWS CLI:**
+#### Step 2 — Generate an access key
 
-```bash
-aws iam put-role-policy \
-  --role-name <AMPLIFY_ROLE_NAME> \
-  --policy-name markdown-amplified-s3 \
-  --policy-document '{
-    "Version":"2012-10-17",
-    "Statement":[{
-      "Effect":"Allow",
-      "Action":["s3:GetObject","s3:ListBucket"],
-      "Resource":["arn:aws:s3:::YOUR_BUCKET","arn:aws:s3:::YOUR_BUCKET/*"]
-    }]
-  }'
-```
+1. Open the new user in IAM, go to the **Security credentials** tab, and click **Create access key**.
+2. Choose **Application running outside AWS** as the use case.
+3. Copy the **Access key ID** and **Secret access key** — the secret is shown only once.
 
-`s3:GetObject` covers all file reads. `s3:ListBucket` is required for the content listing call used to discover available markdown files.
+You will add these as Amplify environment variables in the next step.
 
-### Setting the variable on Amplify
+### Setting the variables on Amplify
 
 In the Amplify Console → **Hosting → Environment variables**, add:
 
@@ -381,10 +349,15 @@ In the Amplify Console → **Hosting → Environment variables**, add:
 |---|---|
 | `S3_BUCKET` | `your-bucket-name` |
 | `S3_PREFIX` | `docs/` (optional — omit if your files are at the bucket root) |
+| `S3_REGION` | AWS region of the bucket, e.g. `eu-north-1` |
+| `S3_ACCESS_KEY_ID` | Access key ID from Step 2 above |
+| `S3_SECRET_ACCESS_KEY` | Secret access key from Step 2 above |
 
-Click **Save** and then trigger a new deployment (push a commit, or use **Redeploy this version** in the Amplify Console). The environment variables take effect on the next deployed build.
+Click **Save** and trigger a new deployment — push a commit or use **Redeploy this version** in the Amplify Console. The variables are baked into the Lambda bundle at build time, so they take effect only after the next successful build.
 
-`content-security.json` rules continue to work the same way — the path matched against the rules is always the relative path within the bucket prefix, identical to how it works with the filesystem backend.
+### Security config in S3
+
+Upload `content-security.json` to the root of your bucket (or `<S3_PREFIX>content-security.json` if you use a prefix). The Lambda fetches it from S3 and caches the rules for 60 seconds. After uploading a new version, wait up to one minute for the change to take effect — no redeploy is required. The path matched against the rules is always relative to the bucket prefix, identical to how it works with the filesystem backend.
 
 ## Deployment to AWS Amplify
 
@@ -404,6 +377,26 @@ Click **Save** and then trigger a new deployment (push a commit, or use **Redepl
 
    Then redeploy.
 5. Every subsequent push triggers a fresh SSR build and deployment.
+
+## S3 Deployment Workflow
+
+The recommended path for a new S3-backed deployment, from zero to live:
+
+**1. Fork and deploy (static mode)**
+
+Fork `Xykon/markdown_amplified` to your own GitHub account and connect it to a new Amplify app (`WEB_COMPUTE` platform). The site starts up immediately, serving the built-in sample content from `content.default/`. Verify the deployment is working end-to-end before touching S3.
+
+**2. Create the S3 bucket and IAM user**
+
+Follow the steps in [Create the S3 bucket](#create-the-s3-bucket) and [Create an IAM user for S3 access](#create-an-iam-user-for-s3-access). Upload your markdown files (and optionally `content-security.json`) to the bucket.
+
+**3. Set the environment variables and redeploy**
+
+Add `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` in the Amplify Console (see [Setting the variables on Amplify](#setting-the-variables-on-amplify)). Push a commit or use **Redeploy this version** to trigger a fresh build. The build bakes the credentials into the Lambda bundle and the site switches to S3 mode.
+
+**4. Publish new content without redeploying**
+
+From this point on, upload or update files in S3 and they are live immediately on the next page request. Update `content-security.json` in S3 and the new rules take effect within 60 seconds. No code changes or redeployments are needed for content updates.
 
 ## Public Upstream + Private Production Workflow
 
