@@ -2,7 +2,7 @@
 
 This site hosts Markdown files and renders them as readable web pages.
 
-Files are stored in a private GitHub repository and published with AWS Amplify™. 
+Files are stored in a private GitHub repository, published with AWS Amplify™, and optionally served from Amazon Simple Storage Service (Amazon S3™).
 Only files that are linked in index.md are publicly discoverable.
 Private files can be shared via full URL to the filename.
 
@@ -12,13 +12,14 @@ Private files can be shared via full URL to the filename.
 - Public source repository: [Xykon/markdown_amplified](https://github.com/Xykon/markdown_amplified)
 - License: [MIT License](https://github.com/Xykon/markdown_amplified/blob/main/LICENSE)
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
+- File storage: [Amazon S3™](https://aws.amazon.com/s3/)
 - Project documentation: [README.md](/README.md)
 - Private file example link: https://markdown-amplified.ehlers.tv/sample.md
 
 ## Copyright and Legal Notices
 
 - © 2026 Christian Ehlers. All rights reserved.
-- AWS and AWS Amplify are trademarks of Amazon.com, Inc. or its affiliates.
+- Amazon Web Services, AWS, AWS Amplify, Amazon S3, and Amazon Simple Storage Service are trademarks of Amazon.com, Inc. or its affiliates.
 - GitHub is a trademark of GitHub, Inc.
 
 ## EU Public Site Notice
