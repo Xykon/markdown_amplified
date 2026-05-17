@@ -1,34 +1,8 @@
-import fs from 'fs'
 import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
-import { getActiveContentDir, getActiveMarkdownFiles } from '../../content-source.mjs'
-import { loadSecurityRules, findRule, isWithinDateRange, encryptContent } from '../../lib/security.mjs'
-
-// Only pre-generated paths are valid; all others return 404
-export const dynamicParams = false
-
-export async function generateStaticParams() {
-  const files = getActiveMarkdownFiles()
-  const rules = loadSecurityRules()
-  const params = []
-
-  for (const file of files) {
-    const rule = findRule(file, rules)
-    if (rule && !isWithinDateRange(rule)) continue
-
-    const segments = file.split('/')
-    params.push({ slug: segments })
-
-    // For <dir>/index.md, also emit a directory-style slug so
-    // `/<dir>` automatically renders the directory's index.md
-    if (segments.length > 1 && segments[segments.length - 1] === 'index.md') {
-      params.push({ slug: segments.slice(0, -1) })
-    }
-  }
-
-  return params
-}
+import { getContentProvider } from '../../lib/content-provider.mjs'
+import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -57,9 +31,6 @@ export default async function MarkdownPage({ params }) {
   const decodedSlug = decodeSlug(slug)
   const requested = decodedSlug.join('/')
 
-  const activeContentDir = getActiveContentDir()
-  const contentRoot = path.resolve(activeContentDir)
-
   // Resolve the slug to a markdown file:
   // - If it ends in .md, use it directly
   // - Otherwise, treat it as a directory and load <dir>/index.md
@@ -67,23 +38,16 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : path.posix.join(requested, 'index.md')
 
-  const filePath = path.resolve(activeContentDir, relativeFile)
-
-  // Sanitize: prevent directory traversal
-  if (filePath !== contentRoot && !filePath.startsWith(contentRoot + path.sep)) {
-    notFound()
-  }
-
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-    notFound()
-  }
-
   const rules = loadSecurityRules()
   const rule = findRule(relativeFile, rules)
 
   if (rule && !isWithinDateRange(rule)) notFound()
 
-  const rawContent = fs.readFileSync(filePath, 'utf-8')
+  const provider = getContentProvider()
+  const fileBuffer = await provider.readFile(relativeFile)
+  if (!fileBuffer) notFound()
+
+  const rawContent = fileBuffer.toString('utf-8')
 
   let content = rawContent
   let encrypted = null
@@ -100,6 +64,7 @@ export default async function MarkdownPage({ params }) {
       encrypted={encrypted ?? undefined}
       validFrom={rule?.validFrom ?? undefined}
       validUntil={rule?.validUntil ?? undefined}
+      hasDownload={isDownloadAllowed(rule)}
     />
   )
 }

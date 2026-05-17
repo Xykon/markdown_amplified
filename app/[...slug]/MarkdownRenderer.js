@@ -465,8 +465,18 @@ function MermaidBlock({ chart }) {
 }
 
 
-export default function MarkdownRenderer({ content }) {
+export default function MarkdownRenderer({ content, slug }) {
   const processedContent = useMemo(() => content, [content])
+
+  // Compute the directory portion of the current page's slug so relative
+  // image URLs can be rewritten to /asset/<dir>/<src> and served by the
+  // asset route handler. Absolute and root-relative URLs are left unchanged.
+  const assetBase = useMemo(() => {
+    if (!slug || slug.length === 0) return ''
+    const parts = [...slug]
+    if (parts[parts.length - 1].endsWith('.md')) parts.pop()
+    return parts.join('/')
+  }, [slug])
 
   useEffect(() => {
     const initial = window.requestAnimationFrame(() => {
@@ -553,6 +563,23 @@ export default function MarkdownRenderer({ content }) {
               {children}
             </code>
           )
+        },
+        a({ href, children, ...props }) {
+          const resolved =
+            href &&
+            !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(href) &&
+            !href.endsWith('.md')
+              ? `/asset/${assetBase ? assetBase + '/' : ''}${href}`
+              : href
+          return <a href={resolved} {...props}>{children}</a>
+        },
+        img({ src, alt, ...props }) {
+          const resolved =
+            src && !/^(https?:\/\/|\/)/.test(src)
+              ? `/asset/${assetBase ? assetBase + '/' : ''}${src}`
+              : src
+          // eslint-disable-next-line @next/next/no-img-element
+          return <img src={resolved} alt={alt ?? ''} {...props} />
         },
       }}
     >

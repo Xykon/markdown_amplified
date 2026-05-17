@@ -66,8 +66,9 @@ function CalendarIcon() {
 // - encrypted: { salt, iv, ciphertext } when password-protected, otherwise null/undefined
 // - validFrom / validUntil: ISO date strings for date-range gating, or null/undefined
 // - content: plaintext markdown for date-only pages, null for password-protected pages
+// - hasDownload: whether the download button is shown (mirrors the downloads route)
 // After any gate is cleared, delegates to MarkdownShell for normal rendering.
-export default function SecurityGate({ slug, content, encrypted, validFrom, validUntil }) {
+export default function SecurityGate({ slug, content, encrypted, validFrom, validUntil, hasDownload }) {
   const [phase, setPhase] = useState('init')
   const [resolvedContent, setResolvedContent] = useState(content)
   const [password, setPassword] = useState('')
@@ -135,7 +136,7 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
   if (phase === 'init') return null
 
   if (phase === 'open') {
-    return <MarkdownShell slug={slug} content={resolvedContent} hasDownload={!encrypted} />
+    return <MarkdownShell slug={slug} content={resolvedContent} hasDownload={hasDownload} />
   }
 
   if (phase === 'date-locked') {

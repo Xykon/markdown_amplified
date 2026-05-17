@@ -1,26 +1,18 @@
-import fs from 'fs'
-import path from 'path'
-import { getActiveContentDir } from '../content-source.mjs'
-import { loadSecurityRules, findRule, isWithinDateRange, encryptContent } from '../lib/security.mjs'
+import { getContentProvider } from '../lib/content-provider.mjs'
+import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
 import SecurityGate from './SecurityGate'
 
-function getIndexFile() {
-  return path.join(getActiveContentDir(), 'index.md')
-}
-
 export default async function Home() {
-  const INDEX_FILE = getIndexFile()
-
-  if (!fs.existsSync(INDEX_FILE)) {
-    return null
-  }
-
   const rules = loadSecurityRules()
   const rule = findRule('index.md', rules)
 
   if (rule && !isWithinDateRange(rule)) return null
 
-  const rawContent = fs.readFileSync(INDEX_FILE, 'utf-8')
+  const provider = getContentProvider()
+  const fileBuffer = await provider.readFile('index.md')
+  if (!fileBuffer) return null
+
+  const rawContent = fileBuffer.toString('utf-8')
 
   let content = rawContent
   let encrypted = null
@@ -37,6 +29,7 @@ export default async function Home() {
       encrypted={encrypted ?? undefined}
       validFrom={rule?.validFrom ?? undefined}
       validUntil={rule?.validUntil ?? undefined}
+      hasDownload={isDownloadAllowed(rule)}
     />
   )
 }

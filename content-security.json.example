@@ -29,6 +29,17 @@
       "validUntil": "2025-09-12"
     },
     {
+      "comment": "Password-protected but source markdown is explicitly downloadable",
+      "match": "reports/q3-summary.md",
+      "password": "readonly",
+      "download": true
+    },
+    {
+      "comment": "Public page but download of the source is disabled",
+      "match": "legal/terms.md",
+      "download": false
+    },
+    {
       "comment": "Per-file override: one public file inside an otherwise protected directory (no password, no dates)",
       "match": "internal/welcome.md"
     }

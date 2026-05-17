@@ -57,7 +57,7 @@ export default function MarkdownShell({ slug, content, hasDownload = true }) {
         )}
 
         <article className="markdown-body">
-          <MarkdownRenderer content={content} />
+          <MarkdownRenderer content={content} slug={slug} />
         </article>
       </div>
     </>

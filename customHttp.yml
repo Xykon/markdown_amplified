@@ -1,8 +1,4 @@
 customHeaders:
-  - pattern: '*.md'
-    headers:
-      - key: Content-Type
-        value: 'text/html; charset=utf-8'
   - pattern: '**/*'
     headers:
       - key: Cache-Control
