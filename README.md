@@ -14,6 +14,7 @@ This project renders markdown documents from the `content/` directory with a fal
 - Download button for source markdown files
 - Light/dark theme toggle with persistence
 - Per-file and per-directory security: password protection and date-range gating
+- Configurable home button (site root, folder root, or custom URL) via `content-security.json`
 - Optional S3 content backend (set `S3_BUCKET` — no local content files needed)
 
 ## Table of Contents
@@ -25,13 +26,14 @@ This project renders markdown documents from the `content/` directory with a fal
 5. [Local Development](#local-development)
 6. [Build](#build)
 7. [Content Security](#content-security)
-8. [S3 Content Backend](#s3-content-backend)
-9. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-10. [S3 Deployment Workflow](#s3-deployment-workflow)
-11. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-12. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-13. [Operational Notes](#operational-notes)
-14. [Troubleshooting](#troubleshooting)
+8. [Home Button](#home-button)
+9. [S3 Content Backend](#s3-content-backend)
+10. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
+11. [S3 Deployment Workflow](#s3-deployment-workflow)
+12. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+13. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+14. [Operational Notes](#operational-notes)
+15. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -192,6 +194,7 @@ Then rebuild and redeploy the site.
 | `validFrom` | ISO date (e.g. `2025-09-01`). File is unavailable before this date. |
 | `validUntil` | ISO date. File is unavailable after this date. |
 | `download` | `true` or `false`. Overrides the default download behaviour (see below). |
+| `home` | Configures the home button for this file or directory. See [Home Button](#home-button). |
 | `comment` | Optional human note — ignored at runtime. |
 
 All fields except `match` are optional and can be combined freely.
@@ -211,6 +214,59 @@ The default download behaviour is: files without a password are downloadable; pa
 ### Security limitations
 
 Password protection is a hybrid of server and client. The server refuses to serve pages for date-expired files, but for password-protected files it sends the ciphertext to the browser and lets the client decrypt. This means a determined attacker with the ciphertext could attempt an offline brute-force attack against a weak password. Use a strong, random password for anything genuinely sensitive.
+
+## Home Button
+
+An optional home button can be shown in the header, to the left of the back button. It is disabled by default and configured in `content-security.json`.
+
+### Global default
+
+Add a top-level `home` key to enable the button on every page:
+
+```json
+{
+  "home": "site",
+  "rules": []
+}
+```
+
+### Per-file and per-directory overrides
+
+Add a `home` field to any rule to override the global default for specific files or directories:
+
+```json
+{
+  "home": "site",
+  "rules": [
+    {
+      "comment": "Link back to the docs folder root for files nested inside it",
+      "match": "docs/",
+      "home": "folder"
+    },
+    {
+      "comment": "Custom URL for a specific file",
+      "match": "reports/q3-summary.md",
+      "home": "https://example.com/reports/"
+    },
+    {
+      "comment": "Disable the home button on a page that is itself the home",
+      "match": "index.md",
+      "home": false
+    }
+  ]
+}
+```
+
+### Home field values
+
+| Value | Effect |
+|---|---|
+| `"site"` | Links to the site root `/`. |
+| `"folder"` | Links to the top-level folder of the current file (e.g. `docs/api/ref.md` → `/docs/`). Falls back to `/` for files at the root level. |
+| `"https://..."` | Any URL string — used as-is as the link destination. |
+| `false` | Explicitly disables the button, even if a global default is set. |
+
+The same match precedence applies as for security rules — the most specific rule wins.
 
 ## S3 Content Backend
 
