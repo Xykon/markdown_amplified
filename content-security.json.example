@@ -1,6 +1,6 @@
 {
-  "comment": "Optional global home button shown on every page. Values: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled). Default: disabled.",
-  "home": false,
+  "comment": "Global home button default. The home button is enabled by default and links to the site root (/). Set 'home' here to change the default for all pages: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled).",
+  "home": "site",
   "rules": [
     {
       "comment": "Password-protect everything in the 'internal/' directory",
@@ -46,24 +46,25 @@
       "match": "internal/welcome.md"
     },
     {
-      "comment": "Home button: show a home button linking to site root for everything in the docs/ folder",
-      "match": "docs/",
-      "home": "site"
+      "comment": "Home button: disable globally by setting the top-level 'home' to false instead of 'site'",
+      "comment2": "To disable for an entire folder, add a rule like this:",
+      "match": "standalone/",
+      "home": false
     },
     {
-      "comment": "Home button: link back to the docs folder root for files nested inside it",
-      "match": "docs/api/",
+      "comment": "Home button: disable for a single file (e.g. the homepage itself)",
+      "match": "index.md",
+      "home": false
+    },
+    {
+      "comment": "Home button: override to link to the top-level folder root instead of site root",
+      "match": "docs/",
       "home": "folder"
     },
     {
-      "comment": "Home button: custom URL for a specific file",
+      "comment": "Home button: override with a custom URL for a specific file",
       "match": "reports/q3-summary.md",
       "home": "https://example.com/reports/"
-    },
-    {
-      "comment": "Home button: explicitly disable for a file even if a parent rule or global default enables it",
-      "match": "docs/standalone.md",
-      "home": false
     }
   ]
 }

@@ -14,7 +14,7 @@ This project renders markdown documents from the `content/` directory with a fal
 - Download button for source markdown files
 - Light/dark theme toggle with persistence
 - Per-file and per-directory security: password protection and date-range gating
-- Configurable home button (site root, folder root, or custom URL) via `content-security.json`
+- Home button enabled by default, linking to site root — configurable or disableable per file/directory via `content-security.json`
 - Optional S3 content backend (set `S3_BUCKET` — no local content files needed)
 
 ## Table of Contents
@@ -217,29 +217,46 @@ Password protection is a hybrid of server and client. The server refuses to serv
 
 ## Home Button
 
-An optional home button can be shown in the header, to the left of the back button. It is disabled by default and configured in `content-security.json`.
+A home button is shown in the header by default, linking to the site root (`/`). It can be changed or disabled globally or per file/directory in `content-security.json`.
 
-### Global default
+### Disabling or changing the default globally
 
-Add a top-level `home` key to enable the button on every page:
+Add a top-level `home` key to `content-security.json`:
 
 ```json
 {
-  "home": "site",
+  "home": false,
   "rules": []
 }
 ```
 
+| Top-level value | Effect |
+|---|---|
+| `"site"` | Link to site root `/` on every page (the built-in default). |
+| `"folder"` | Link to the top-level folder of each file on every page. |
+| `"https://..."` | Custom URL on every page. |
+| `false` | Disable the home button site-wide. |
+
 ### Per-file and per-directory overrides
 
-Add a `home` field to any rule to override the global default for specific files or directories:
+Add a `home` field to any rule to override the global default for specific files or directories. The most specific match wins, same as security rules.
 
 ```json
 {
   "home": "site",
   "rules": [
     {
-      "comment": "Link back to the docs folder root for files nested inside it",
+      "comment": "Disable home button on the homepage itself",
+      "match": "index.md",
+      "home": false
+    },
+    {
+      "comment": "Disable home button for an entire section",
+      "match": "standalone/",
+      "home": false
+    },
+    {
+      "comment": "Link to the folder root instead of site root for nested docs",
       "match": "docs/",
       "home": "folder"
     },
@@ -247,26 +264,10 @@ Add a `home` field to any rule to override the global default for specific files
       "comment": "Custom URL for a specific file",
       "match": "reports/q3-summary.md",
       "home": "https://example.com/reports/"
-    },
-    {
-      "comment": "Disable the home button on a page that is itself the home",
-      "match": "index.md",
-      "home": false
     }
   ]
 }
 ```
-
-### Home field values
-
-| Value | Effect |
-|---|---|
-| `"site"` | Links to the site root `/`. |
-| `"folder"` | Links to the top-level folder of the current file (e.g. `docs/api/ref.md` → `/docs/`). Falls back to `/` for files at the root level. |
-| `"https://..."` | Any URL string — used as-is as the link destination. |
-| `false` | Explicitly disables the button, even if a global default is set. |
-
-The same match precedence applies as for security rules — the most specific rule wins.
 
 ## S3 Content Backend
 
