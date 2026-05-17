@@ -165,8 +165,23 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
         <div className="security-gate-icon"><LockIcon /></div>
         <p className="security-gate-heading">Password protected</p>
         <div className="security-gate-row">
+          {/* Hidden username field — password managers require a username+password
+              pair to offer save/autofill. The page path acts as the username so
+              each protected page gets its own entry in the password manager. */}
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value={slug ? slug.join('/') : ''}
+            readOnly
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+          />
           <input
             ref={inputRef}
+            id="password"
+            name="password"
             type="password"
             className="security-gate-input"
             placeholder="Enter password"
