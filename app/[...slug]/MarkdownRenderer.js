@@ -571,7 +571,16 @@ export default function MarkdownRenderer({ content, slug }) {
             !href.endsWith('.md')
               ? `/asset/${assetBase ? assetBase + '/' : ''}${href}`
               : href
-          return <a href={resolved} {...props}>{children}</a>
+          const isExternal = /^https?:\/\//i.test(resolved)
+          return (
+            <a
+              href={resolved}
+              {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              {...props}
+            >
+              {children}
+            </a>
+          )
         },
         img({ src, alt, ...props }) {
           const resolved =
