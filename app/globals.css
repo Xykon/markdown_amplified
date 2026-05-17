@@ -196,10 +196,10 @@ body {
 
 .back-button {
   text-decoration: none;
-}
-
-.back-button svg {
-  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
 }
 
 .toc-toggle-button {
@@ -423,17 +423,6 @@ body {
   .header-button {
     padding: 7px 10px;
     font-size: 0.88em;
-  }
-
-  .back-button-label {
-    display: none;
-  }
-
-  .back-button {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    justify-content: center;
   }
 
   .download-button {

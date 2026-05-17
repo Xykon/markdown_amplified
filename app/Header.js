@@ -65,9 +65,10 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               aria-label="Go back"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
+                <polyline points="19 18 14 12 19 6" />
+                <polyline points="13 18 8 12 13 6" />
+                <polyline points="7 18 2 12 7 6" />
               </svg>
-              <span className="back-button-label">Back</span>
             </a>
           )}
           {hasToc && (
