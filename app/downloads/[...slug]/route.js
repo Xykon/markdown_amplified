@@ -35,6 +35,7 @@ export async function GET(request, { params }) {
     headers: {
       'Content-Type': 'text/markdown; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-store',
     },
   })
 }
