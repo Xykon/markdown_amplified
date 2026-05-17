@@ -27,13 +27,15 @@ This project renders markdown documents from the `content/` directory with a fal
 6. [Build](#build)
 7. [Content Security](#content-security)
 8. [Home Button](#home-button)
-9. [S3 Content Backend](#s3-content-backend)
-10. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-11. [S3 Deployment Workflow](#s3-deployment-workflow)
-12. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-13. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-14. [Operational Notes](#operational-notes)
-15. [Troubleshooting](#troubleshooting)
+9. [TOC Default](#toc-default)
+10. [S3 Content Backend](#s3-content-backend)
+11. [S3 Content Backend](#s3-content-backend)
+12. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
+13. [S3 Deployment Workflow](#s3-deployment-workflow)
+14. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+15. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+16. [Operational Notes](#operational-notes)
+17. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -195,6 +197,7 @@ Then rebuild and redeploy the site.
 | `validUntil` | ISO date. File is unavailable after this date. |
 | `download` | `true` or `false`. Overrides the default download behaviour (see below). |
 | `home` | Configures the home button for this file or directory. See [Home Button](#home-button). |
+| `toc` | `true` or `false`. Controls whether the TOC opens by default on desktop. See [TOC Default](#toc-default). |
 | `comment` | Optional human note — ignored at runtime. |
 
 All fields except `match` are optional and can be combined freely.
@@ -268,6 +271,50 @@ Add a `home` field to any rule to override the global default for specific files
   ]
 }
 ```
+
+## TOC Default
+
+The table of contents opens by default on desktop when a document has headings. This can be changed globally or per file/directory in `content-security.json` using the `toc` field — following the same match precedence as security rules and the home button.
+
+### Disabling globally
+
+```json
+{
+  "toc": false,
+  "rules": []
+}
+```
+
+### Per-file and per-directory overrides
+
+```json
+{
+  "rules": [
+    {
+      "comment": "Start TOC closed on the homepage",
+      "match": "index.md",
+      "toc": false
+    },
+    {
+      "comment": "Start TOC closed for an entire section",
+      "match": "landing/",
+      "toc": false
+    },
+    {
+      "comment": "Re-enable TOC for a specific file inside a closed section",
+      "match": "landing/reference.md",
+      "toc": true
+    }
+  ]
+}
+```
+
+| Value | Effect |
+|---|---|
+| `true` | TOC opens by default on desktop (built-in default). |
+| `false` | TOC starts closed. The user can still open it manually. |
+
+The TOC is always hidden on mobile regardless of this setting.
 
 ## S3 Content Backend
 

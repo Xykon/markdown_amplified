@@ -1,6 +1,8 @@
 {
   "comment": "Global home button default. The home button is enabled by default and links to the site root (/). Set 'home' here to change the default for all pages: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled).",
   "home": "site",
+  "comment2": "Global TOC default. The TOC opens by default on desktop. Set 'toc' to false to start it closed on all pages.",
+  "toc": true,
   "rules": [
     {
       "comment": "Password-protect everything in the 'internal/' directory",
@@ -65,6 +67,16 @@
       "comment": "Home button: override with a custom URL for a specific file",
       "match": "reports/q3-summary.md",
       "home": "https://example.com/reports/"
+    },
+    {
+      "comment": "TOC: start closed on a landing/index page",
+      "match": "index.md",
+      "toc": false
+    },
+    {
+      "comment": "TOC: start closed for an entire section",
+      "match": "landing/",
+      "toc": false
     }
   ]
 }

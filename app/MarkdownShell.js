@@ -5,9 +5,9 @@ import Header from './Header'
 import TableOfContents from './TableOfContents'
 import MarkdownRenderer from './[...slug]/MarkdownRenderer'
 
-export default function MarkdownShell({ slug, content, hasDownload = true, homeUrl }) {
+export default function MarkdownShell({ slug, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true }) {
   const hasToc = useMemo(() => /^(#{1,3})\s+.+$/m.test(content), [content])
-  const [tocOpen, setTocOpen] = useState(true)
+  const [tocOpen, setTocOpen] = useState(tocOpenDefault)
 
   const layoutClassName = [
     'page-layout',
