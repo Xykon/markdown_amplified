@@ -12,13 +12,11 @@ const nextConfig = {
     S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID ?? '',
     S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY ?? '',
   },
-  experimental: {
-    // @vercel/nft (used by Next.js) excludes files named README.md from Lambda
-    // traces, treating them as documentation. Force-include them so symlinks in
-    // content/ that point to README.md files resolve correctly at runtime.
-    outputFileTracingIncludes: {
-      '/**': ['./README.md', './content/README.md', './content.default/README.md'],
-    },
+  // @vercel/nft (used by Next.js) excludes files named README.md from Lambda
+  // traces, treating them as documentation. Force-include them so symlinks in
+  // content/ that point to README.md files resolve correctly at runtime.
+  outputFileTracingIncludes: {
+    '/**': ['./README.md', './content/README.md', './content.default/README.md'],
   },
 }
 
