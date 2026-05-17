@@ -12,6 +12,7 @@ This site hosts Markdown files and renders them as readable web pages.
 ## Project Links
 
 - Public source repository: [Xykon/markdown_amplified](https://github.com/Xykon/markdown_amplified)
+- GitHub bug tracker: [Xykon/Projects/@Markdown Aplified Bug Tracker](https://github.com/users/Xykon/projects/1)
 - License: [MIT License](https://github.com/Xykon/markdown_amplified/blob/main/LICENSE)
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
 - File storage: [Amazon S3™](https://aws.amazon.com/s3/)
