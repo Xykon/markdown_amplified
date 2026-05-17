@@ -17,6 +17,7 @@ This site hosts Markdown files and renders them as readable web pages.
 - File storage: [Amazon S3™](https://aws.amazon.com/s3/)
 - Project documentation: [README.md](/README.md)
 - Private file example link: https://markdown-amplified.ehlers.tv/sample.md
+- Sub-directories are also supported: https://markdown-amplified.ehlers.tv/test
 
 ## Copyright and Legal Notices
 
