@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
   if (!relPath.endsWith('.md')) return new NextResponse(null, { status: 404 })
 
   // Apply the same security rules as the page route
-  const rules = loadSecurityRules()
+  const rules = await loadSecurityRules()
   const rule = findRule(relPath, rules)
   if (!isDownloadAllowed(rule) || (rule && !isWithinDateRange(rule))) {
     return new NextResponse(null, { status: 404 })

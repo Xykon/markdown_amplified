@@ -38,7 +38,7 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : path.posix.join(requested, 'index.md')
 
-  const rules = loadSecurityRules()
+  const rules = await loadSecurityRules()
   const rule = findRule(relativeFile, rules)
 
   if (rule && !isWithinDateRange(rule)) notFound()

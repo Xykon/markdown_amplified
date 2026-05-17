@@ -32,8 +32,11 @@ export async function GET(request, { params }) {
 
   const relPath = decodeSlug(slug).join('/')
 
-  // Markdown files are served as pages, not assets
-  if (relPath.endsWith('.md')) return new NextResponse(null, { status: 404 })
+  // Markdown files are served as pages, not assets.
+  // content-security.json contains passwords and must never be exposed.
+  if (relPath.endsWith('.md') || relPath === 'content-security.json') {
+    return new NextResponse(null, { status: 404 })
+  }
 
   const provider = getContentProvider()
   const content = await provider.readFile(relPath)

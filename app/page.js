@@ -3,7 +3,7 @@ import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, encr
 import SecurityGate from './SecurityGate'
 
 export default async function Home() {
-  const rules = loadSecurityRules()
+  const rules = await loadSecurityRules()
   const rule = findRule('index.md', rules)
 
   if (rule && !isWithinDateRange(rule)) return null
