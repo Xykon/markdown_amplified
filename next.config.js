@@ -8,6 +8,9 @@ const nextConfig = {
   env: {
     S3_BUCKET: process.env.S3_BUCKET ?? '',
     S3_PREFIX: process.env.S3_PREFIX ?? '',
+    S3_REGION: process.env.S3_REGION ?? '',
+    S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID ?? '',
+    S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY ?? '',
   },
   experimental: {
     // @vercel/nft (used by Next.js) excludes files named README.md from Lambda
