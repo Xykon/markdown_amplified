@@ -565,12 +565,13 @@ export default function MarkdownRenderer({ content, slug }) {
           )
         },
         a({ href, children, ...props }) {
-          const resolved =
-            href &&
-            !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(href) &&
-            !href.endsWith('.md')
-              ? `/asset/${assetBase ? assetBase + '/' : ''}${href}`
-              : href
+          let resolved = href
+          if (href && !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(href)) {
+            const base = assetBase ? `${assetBase}/` : ''
+            resolved = href.endsWith('.md')
+              ? `/${base}${href}`
+              : `/asset/${base}${href}`
+          }
           const isExternal = (() => {
             if (!/^https?:\/\//i.test(resolved)) return false
             try { return new URL(resolved).origin !== window.location.origin } catch { return true }
