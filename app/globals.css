@@ -1748,7 +1748,7 @@ html[data-theme='dark'] .security-gate-error {
 .admin-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1756,11 +1756,11 @@ html[data-theme='dark'] .security-gate-error {
   padding: 20px;
 }
 .admin-modal {
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   max-width: 480px;
   width: 100%;
   padding: 20px 24px;
