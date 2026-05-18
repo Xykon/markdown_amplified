@@ -4,9 +4,11 @@ This site hosts Markdown files and renders them as readable web pages.
 
 - Files are published with AWS Amplify™
 - Files are deployed via GitHub repository or served from Amazon Simple Storage Service (Amazon S3™).
-- Only files that are linked in index.md are publicly discoverable.
+- Only files that are linked from index.md are publicly discoverable.
 - Private files can be shared via full URL to the filename.
 - Optional password protection and access time restrictions configurable.
+- Optional Admin Interface with file browser
+- Optional cookie support for passwords
 
 
 ## Project Links
@@ -17,7 +19,7 @@ This site hosts Markdown files and renders them as readable web pages.
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
 - File storage: [Amazon S3™](https://aws.amazon.com/s3/)
 - Project documentation: [README.md](/README.md)
-- Examples: [examples.md](/examples.md)
+- Default Content Examples: [examples.md](/examples.md)
 
 ## Copyright and Legal Notices
 
