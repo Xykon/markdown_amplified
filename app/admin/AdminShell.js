@@ -109,30 +109,6 @@ function Breadcrumb({ path, onNavigate }) {
   )
 }
 
-// ── Write action bar (New folder + Upload) ───────────────────────────────────
-// onUploadClick: if provided, renders a plain button that calls it (used for
-// the bottom repeat bar where the real file input lives in the top bar).
-
-function WriteActions({ onToggleNewFolder, uploading, fileInputRef, onUpload, onUploadClick }) {
-  return (
-    <div className="admin-actions-bar">
-      <button className="admin-btn" onClick={onToggleNewFolder}>New folder</button>
-      {onUploadClick
-        ? (
-          <button className="admin-btn admin-btn-primary" onClick={onUploadClick} disabled={uploading}>
-            {uploading ? 'Uploading…' : 'Upload files'}
-          </button>
-        ) : (
-          <label className="admin-btn admin-btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-            {uploading ? 'Uploading…' : 'Upload files'}
-            <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={onUpload} disabled={uploading} />
-          </label>
-        )
-      }
-    </div>
-  )
-}
-
 // ── File browser ─────────────────────────────────────────────────────────────
 
 function FileBrowser({ onLogout, readonly, cookieConfig }) {
@@ -267,16 +243,6 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
         </div>
       </div>
 
-      {/* Write actions above table */}
-      {!readonly && (
-        <WriteActions
-          onToggleNewFolder={toggleNewFolder}
-          uploading={uploading}
-          fileInputRef={fileInputRef}
-          onUpload={handleUpload}
-        />
-      )}
-
       {/* New folder inline form */}
       {!readonly && showNewFolder && (
         <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
@@ -301,6 +267,20 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
       {!loading && listing && (
         <table className="admin-table">
           <thead>
+            {!readonly && (
+              <tr className="admin-action-row">
+                <td colSpan={2} />
+                <td colSpan={2} className="admin-action-cell">
+                  <div className="admin-actions-inline">
+                    <button className="admin-btn" onClick={toggleNewFolder}>New folder</button>
+                    <label className="admin-btn" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
+                      {uploading ? 'Uploading…' : 'Upload files'}
+                      <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                </td>
+              </tr>
+            )}
             <tr>
               <th>Name</th>
               <th>Size</th>
@@ -337,16 +317,22 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
               </tr>
             ))}
           </tbody>
+          {showBottomActions && (
+            <tfoot>
+              <tr className="admin-action-row">
+                <td colSpan={2} />
+                <td colSpan={2} className="admin-action-cell">
+                  <div className="admin-actions-inline">
+                    <button className="admin-btn" onClick={toggleNewFolder}>New folder</button>
+                    <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      {uploading ? 'Uploading…' : 'Upload files'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
-      )}
-
-      {/* Write actions below table for long lists — triggers the top bar's file input */}
-      {showBottomActions && (
-        <WriteActions
-          onToggleNewFolder={toggleNewFolder}
-          uploading={uploading}
-          onUploadClick={() => fileInputRef.current?.click()}
-        />
       )}
     </div>
   )
