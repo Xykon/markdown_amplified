@@ -1922,6 +1922,15 @@ html[data-theme='dark'] .admin-status-bar {
   text-decoration: underline;
 }
 
+.admin-file-link {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.admin-file-link:hover {
+  text-decoration: underline;
+}
+
 .admin-cell-meta {
   color: var(--muted);
   white-space: nowrap;

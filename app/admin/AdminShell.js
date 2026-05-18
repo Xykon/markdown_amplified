@@ -318,7 +318,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
             ))}
             {listing.files.map(f => (
               <tr key={`f:${f.name}`}>
-                <td><span className="admin-entry-name">📄 {f.name}</span></td>
+                <td><a className="admin-entry-name admin-file-link" href={`/${currentPath ? `${currentPath}/` : ''}${f.name}`} target="_blank" rel="noreferrer">📄 {f.name}</a></td>
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
                 {!readonly && (
