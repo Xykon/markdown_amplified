@@ -1641,20 +1641,37 @@ html[data-theme='dark'] .security-gate-error {
   margin-top: 16px;
 }
 
-.admin-toolbar {
+.admin-topbar {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
-.admin-toolbar-actions {
+.admin-topbar-right {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-left: auto;
   flex-wrap: wrap;
+}
+
+.admin-actions-bar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-actions-bar + .admin-table {
+  margin-top: 0;
+}
+
+.admin-table + .admin-actions-bar {
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 .admin-breadcrumb {
@@ -1707,7 +1724,7 @@ html[data-theme='dark'] .security-gate-error {
 }
 
 .admin-btn {
-  padding: 7px 14px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface-soft);
@@ -1716,10 +1733,11 @@ html[data-theme='dark'] .security-gate-error {
   font-size: 0.875em;
   font-weight: 500;
   white-space: nowrap;
-  transition: background 0.12s;
+  transition: background 0.12s, opacity 0.12s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1.4;
 }
 
 .admin-btn:hover {
@@ -1731,12 +1749,8 @@ html[data-theme='dark'] .security-gate-error {
   cursor: not-allowed;
 }
 
-.admin-btn-sm {
-  padding: 5px 11px;
-}
-
-.admin-btn-xs {
-  padding: 3px 8px;
+.admin-btn-table {
+  padding: 3px 10px;
   font-size: 0.8em;
 }
 
@@ -1798,11 +1812,12 @@ html[data-theme='dark'] .admin-btn-danger:hover {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .admin-new-folder-row .admin-input-sm {
   max-width: 240px;
+  flex: 1;
 }
 
 .admin-error {

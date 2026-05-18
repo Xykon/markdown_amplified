@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 
 const TOKEN_KEY = 'admin-token'
 const READONLY_KEY = 'admin-readonly'
+const ACTIONS_REPEAT_THRESHOLD = 8  // show action bar below table too when this many items
 
 function getToken() {
   try { return sessionStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
@@ -108,17 +109,41 @@ function Breadcrumb({ path, onNavigate }) {
   )
 }
 
+// ── Write action bar (New folder + Upload) ───────────────────────────────────
+// onUploadClick: if provided, renders a plain button that calls it (used for
+// the bottom repeat bar where the real file input lives in the top bar).
+
+function WriteActions({ onToggleNewFolder, uploading, fileInputRef, onUpload, onUploadClick }) {
+  return (
+    <div className="admin-actions-bar">
+      <button className="admin-btn" onClick={onToggleNewFolder}>New folder</button>
+      {onUploadClick
+        ? (
+          <button className="admin-btn admin-btn-primary" onClick={onUploadClick} disabled={uploading}>
+            {uploading ? 'Uploading…' : 'Upload files'}
+          </button>
+        ) : (
+          <label className="admin-btn admin-btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
+            {uploading ? 'Uploading…' : 'Upload files'}
+            <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={onUpload} disabled={uploading} />
+          </label>
+        )
+      }
+    </div>
+  )
+}
+
 // ── File browser ─────────────────────────────────────────────────────────────
 
 function FileBrowser({ onLogout, readonly }) {
   const [currentPath, setCurrentPath] = useState('')
-  const [listing, setListing] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [status, setStatus] = useState('')
+  const [listing, setListing]         = useState(null)
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState('')
+  const [status, setStatus]           = useState('')
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading]     = useState(false)
   const fileInputRef = useRef(null)
 
   const load = useCallback(async (path) => {
@@ -147,7 +172,12 @@ function FileBrowser({ onLogout, readonly }) {
     load(path)
   }
 
-  async function handleDelete(name, isDir) {
+  function toggleNewFolder() {
+    setShowNewFolder(v => !v)
+    setNewFolderName('')
+  }
+
+  async function handleDelete(name) {
     const fullPath = currentPath ? `${currentPath}/${name}` : name
     if (!confirm(`Delete "${fullPath}"?`)) return
     setStatus('')
@@ -221,29 +251,33 @@ function FileBrowser({ onLogout, readonly }) {
     }
   }
 
+  const totalItems = (listing?.dirs.length ?? 0) + (listing?.files.length ?? 0)
+  const showBottomActions = !readonly && totalItems >= ACTIONS_REPEAT_THRESHOLD
+
   return (
     <div>
-      <div className="admin-toolbar">
+      {/* Top bar: breadcrumb + sign out */}
+      <div className="admin-topbar">
         <Breadcrumb path={currentPath} onNavigate={navigate} />
-        <div className="admin-toolbar-actions">
+        <div className="admin-topbar-right">
           {readonly && <span className="admin-readonly-badge">Read-only</span>}
-          {!readonly && (
-            <button className="admin-btn admin-btn-sm" onClick={() => { setShowNewFolder(v => !v); setNewFolderName('') }}>
-              New folder
-            </button>
-          )}
-          {!readonly && (
-            <label className="admin-btn admin-btn-sm admin-btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-              {uploading ? 'Uploading…' : 'Upload files'}
-              <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-            </label>
-          )}
-          <button className="admin-btn admin-btn-sm admin-btn-danger" onClick={() => { clearToken(); onLogout() }}>
+          <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(); onLogout() }}>
             Sign out
           </button>
         </div>
       </div>
 
+      {/* Write actions above table */}
+      {!readonly && (
+        <WriteActions
+          onToggleNewFolder={toggleNewFolder}
+          uploading={uploading}
+          fileInputRef={fileInputRef}
+          onUpload={handleUpload}
+        />
+      )}
+
+      {/* New folder inline form */}
       {!readonly && showNewFolder && (
         <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
           <input
@@ -254,8 +288,8 @@ function FileBrowser({ onLogout, readonly }) {
             className="admin-input admin-input-sm"
             autoFocus
           />
-          <button type="submit" className="admin-btn admin-btn-sm admin-btn-primary">Create</button>
-          <button type="button" className="admin-btn admin-btn-sm" onClick={() => setShowNewFolder(false)}>Cancel</button>
+          <button type="submit" className="admin-btn admin-btn-primary">Create</button>
+          <button type="button" className="admin-btn" onClick={() => setShowNewFolder(false)}>Cancel</button>
         </form>
       )}
 
@@ -271,12 +305,12 @@ function FileBrowser({ onLogout, readonly }) {
               <th>Name</th>
               <th>Size</th>
               <th>Modified</th>
-              <th></th>
+              {!readonly && <th></th>}
             </tr>
           </thead>
           <tbody>
-            {listing.dirs.length === 0 && listing.files.length === 0 && (
-              <tr><td colSpan={4} className="admin-empty">Empty folder</td></tr>
+            {totalItems === 0 && (
+              <tr><td colSpan={readonly ? 3 : 4} className="admin-empty">Empty folder</td></tr>
             )}
             {listing.dirs.map(d => (
               <tr key={`d:${d.name}`} className="admin-row-dir">
@@ -285,11 +319,11 @@ function FileBrowser({ onLogout, readonly }) {
                     📁 {d.name}
                   </button>
                 </td>
-                <td></td>
-                <td></td>
-                <td>
-                  {!readonly && <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(d.name, true)}>Delete</button>}
-                </td>
+                <td className="admin-cell-meta">{formatSize(d.size)}</td>
+                <td className="admin-cell-meta">{formatDate(d.lastModified)}</td>
+                {!readonly && (
+                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDelete(d.name)}>Delete</button></td>
+                )}
               </tr>
             ))}
             {listing.files.map(f => (
@@ -297,13 +331,22 @@ function FileBrowser({ onLogout, readonly }) {
                 <td><span className="admin-entry-name">📄 {f.name}</span></td>
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
-                <td>
-                  {!readonly && <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(f.name, false)}>Delete</button>}
-                </td>
+                {!readonly && (
+                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDelete(f.name)}>Delete</button></td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Write actions below table for long lists — triggers the top bar's file input */}
+      {showBottomActions && (
+        <WriteActions
+          onToggleNewFolder={toggleNewFolder}
+          uploading={uploading}
+          onUploadClick={() => fileInputRef.current?.click()}
+        />
       )}
     </div>
   )
@@ -312,13 +355,12 @@ function FileBrowser({ onLogout, readonly }) {
 // ── Root shell ───────────────────────────────────────────────────────────────
 
 export default function AdminShell() {
-  const [authed, setAuthed] = useState(null)
+  const [authed, setAuthed]   = useState(null)
   const [readonly, setReadonly] = useState(false)
 
   useEffect(() => {
     const token = getToken()
     if (!token) { setAuthed(false); return }
-    // Refresh config from server to pick up any readonly change since last login
     fetch('/api/admin/config', { headers: authHeaders() })
       .then(r => {
         if (r.status === 401) { clearToken(); setAuthed(false); return }
@@ -328,8 +370,6 @@ export default function AdminShell() {
   }, [])
 
   if (authed === null) return null
-
   if (!authed) return <LoginForm onLogin={(ro) => { setReadonly(ro); setAuthed(true) }} />
-
   return <FileBrowser onLogout={() => setAuthed(false)} readonly={readonly} />
 }
