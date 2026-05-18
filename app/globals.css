@@ -1744,6 +1744,15 @@ html[data-theme='dark'] .security-gate-error {
   font-size: 0.8em;
 }
 
+.admin-protected-label {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.8em;
+  color: var(--muted, #888);
+  font-style: italic;
+  cursor: help;
+}
+
 /* Admin modal dialog (folder delete confirmation) */
 .admin-modal-backdrop {
   position: fixed;

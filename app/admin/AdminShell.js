@@ -391,19 +391,25 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
                 )}
               </tr>
             ))}
-            {listing.files.map(f => (
+            {listing.files.map(f => {
+              const isProtected = !currentPath && f.name === 'content-security.json'
+              return (
               <tr key={`f:${f.name}`}>
                 <td>{f.name === 'content-security.json'
                   ? <span className="admin-entry-name">📄 <span className="admin-entry-text">{f.name}</span></span>
-                  : <a className="admin-entry-name admin-file-link" href={buildFileHref(currentPath, f.name)} target="_blank" rel="noreferrer">📄 <span className="admin-entry-text">{f.name}</span></a>
+                  : <span className="admin-entry-name">📄 <a className="admin-file-link" href={buildFileHref(currentPath, f.name)} target="_blank" rel="noreferrer"><span className="admin-entry-text">{f.name}</span></a></span>
                 }</td>
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
                 {!readonly && (
-                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button></td>
+                  <td>{isProtected
+                    ? <span className="admin-protected-label" title="Deleting this file would disable admin auth and all access rules.">🔒 Protected</span>
+                    : <button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button>
+                  }</td>
                 )}
               </tr>
-            ))}
+              )
+            })}
           </tbody>
           {showBottomActions && (
             <tfoot>

@@ -16,6 +16,13 @@ export async function DELETE(request, { params }) {
   const relPath = segments.join('/')
   if (!relPath) return NextResponse.json({ error: 'invalid_path' }, { status: 400 })
 
+  // Refuse to delete the security configuration. Removing it disables admin
+  // auth, password protection, and all access rules — it would silently
+  // brick security and lock the admin user out of the UI.
+  if (relPath === 'content-security.json') {
+    return NextResponse.json({ error: 'protected_file' }, { status: 403 })
+  }
+
   const { searchParams } = new URL(request.url)
   const isDir = searchParams.get('type') === 'dir'
   const recursive = searchParams.get('recursive') === '1'
