@@ -119,6 +119,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [status, setStatus]           = useState('')
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
+  const [showNewFolderBottom, setShowNewFolderBottom] = useState(false)
   const [uploading, setUploading]     = useState(false)
   const fileInputRef = useRef(null)
 
@@ -145,11 +146,19 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
 
   function navigate(path) {
     setShowNewFolder(false)
+    setShowNewFolderBottom(false)
     load(path)
   }
 
   function toggleNewFolder() {
     setShowNewFolder(v => !v)
+    setShowNewFolderBottom(false)
+    setNewFolderName('')
+  }
+
+  function toggleNewFolderBottom() {
+    setShowNewFolderBottom(v => !v)
+    setShowNewFolder(false)
     setNewFolderName('')
   }
 
@@ -221,6 +230,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
       setStatus(`Created folder "${name}"`)
       setNewFolderName('')
       setShowNewFolder(false)
+      setShowNewFolderBottom(false)
       load(currentPath)
     } catch {
       setError('Network error')
@@ -323,7 +333,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
                 <td colSpan={2} />
                 <td colSpan={2} className="admin-action-cell">
                   <div className="admin-actions-inline">
-                    <button className="admin-btn" onClick={toggleNewFolder}>New folder</button>
+                    <button className="admin-btn" onClick={toggleNewFolderBottom}>New folder</button>
                     <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                       {uploading ? 'Uploading…' : 'Upload files'}
                     </button>
@@ -333,6 +343,21 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
             </tfoot>
           )}
         </table>
+      )}
+
+      {!readonly && showNewFolderBottom && (
+        <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
+          <input
+            type="text"
+            value={newFolderName}
+            onChange={e => setNewFolderName(e.target.value)}
+            placeholder="Folder name"
+            className="admin-input admin-input-sm"
+            autoFocus
+          />
+          <button type="submit" className="admin-btn admin-btn-primary">Create</button>
+          <button type="button" className="admin-btn" onClick={() => setShowNewFolderBottom(false)}>Cancel</button>
+        </form>
       )}
     </div>
   )
