@@ -409,13 +409,15 @@ aws s3 ls s3://YOUR_BUCKET/docs/ --recursive
 
 ### Create an IAM user for S3 access
 
-The Amplify WEB_COMPUTE Lambda cannot resolve credentials from the standard AWS credential chain, so an explicit IAM user with read-only S3 access is needed.
+The Amplify WEB_COMPUTE Lambda cannot resolve credentials from the standard AWS credential chain, so an explicit IAM user with S3 access is needed.
 
 #### Step 1 — Create the user
 
 1. In the AWS Console, go to **IAM → Users → Create user**.
-2. Name it something like `markdown-amplified-s3-reader`. Leave **Provide user access to the AWS Management Console** unchecked — this user only needs programmatic access.
-3. On the permissions step, choose **Attach policies directly → Create policy**. Switch to the **JSON** editor and paste:
+2. Name it something like `markdown-amplified-s3`. Leave **Provide user access to the AWS Management Console** unchecked — this user only needs programmatic access.
+3. On the permissions step, choose **Attach policies directly → Create policy**. Switch to the **JSON** editor and paste one of the policies below depending on whether you want to use the admin interface.
+
+**Read-only access** (no admin interface, or admin interface in read-only mode):
 
 ```json
 {
@@ -424,6 +426,30 @@ The Amplify WEB_COMPUTE Lambda cannot resolve credentials from the standard AWS 
     {
       "Effect": "Allow",
       "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::YOUR_BUCKET/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::YOUR_BUCKET"
+    }
+  ]
+}
+```
+
+**Read-write access** (required for the admin interface to upload, delete, and create folders):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
       "Resource": "arn:aws:s3:::YOUR_BUCKET/*"
     },
     {
