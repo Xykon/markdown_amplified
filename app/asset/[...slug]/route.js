@@ -27,7 +27,9 @@ export async function GET(request, { params }) {
   const rule = findRule(relPath, rules)
   if (rule && !isWithinDateRange(rule)) return new NextResponse(null, { status: 404 })
   if (rule?.password) {
-    return NextResponse.redirect(new URL(`/gate/${relPath}`, request.url))
+    const gateUrl = request.nextUrl.clone()
+    gateUrl.pathname = `/gate/${encodeURI(relPath)}`
+    return NextResponse.redirect(gateUrl)
   }
 
   const provider = getContentProvider()
