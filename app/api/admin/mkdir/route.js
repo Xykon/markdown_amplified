@@ -21,6 +21,7 @@ export async function POST(request) {
     await provider.createDirectory(relPath)
     return NextResponse.json({ ok: true })
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('admin mkdir error:', err)
+    return NextResponse.json({ error: 'mkdir_failed' }, { status: 500 })
   }
 }

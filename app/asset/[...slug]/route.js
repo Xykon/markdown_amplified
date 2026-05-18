@@ -27,14 +27,14 @@ export async function GET(request, { params }) {
   const rule = findRule(relPath, rules)
   if (rule && !isWithinDateRange(rule)) return new NextResponse(null, { status: 404 })
   if (rule?.password) {
-    // request.url and request.nextUrl both resolve to localhost:3000 inside
-    // Amplify WEB_COMPUTE Lambda. CloudFront always forwards the real Host
-    // and x-forwarded-proto headers, so use those to build the public URL.
-    const host  = request.headers.get('x-forwarded-host')
-               || request.headers.get('host')
-               || new URL(request.url).host
-    const proto = (request.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim()
-    return NextResponse.redirect(`${proto}://${host}/gate/${encodeURI(relPath)}`)
+    // Use a relative Location header. Browsers resolve it against the
+    // request URL, which avoids trusting attacker-controlled Host /
+    // X-Forwarded-Host headers (an absolute redirect built from those
+    // would enable an open-redirect to a look-alike domain).
+    return new NextResponse(null, {
+      status: 307,
+      headers: { Location: `/gate/${encodeURI(relPath)}` },
+    })
   }
 
   const provider = getContentProvider()

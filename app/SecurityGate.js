@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import MarkdownShell from './MarkdownShell'
 import { unlockCookieName, readCookie, writeCookie, allCookiePasswords } from './pw-cookie'
 
-const PBKDF2_ITERATIONS = 100_000
+const PBKDF2_ITERATIONS = 600_000
 
 function fromBase64(b64) {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))

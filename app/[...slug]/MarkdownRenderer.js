@@ -9,6 +9,7 @@ import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeKatex from 'rehype-katex'
 import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 
 const HASH_SCROLL_OFFSET = 76
 const HIGHLIGHT_ALIASES = {
@@ -16,6 +17,25 @@ const HIGHLIGHT_ALIASES = {
   cpp: ['c++', 'cc', 'cxx', 'hpp', 'hxx', 'hh'],
   shell: ['sh', 'zsh', 'bash'],
   plaintext: ['text', 'txt'],
+}
+
+// Sanitize schema applied right after rehype-raw, so any raw HTML embedded
+// in markdown (potentially attacker-controlled if admins upload content)
+// is stripped of scripts, event handlers, javascript: URLs, etc. before
+// downstream plugins (rehype-katex, rehype-highlight) inject their own
+// trusted markup. We extend the default GitHub-style schema with `id`,
+// `className`, and `style` on all elements so existing markdown that uses
+// those attributes for layout (e.g. callouts, anchored headings) keeps
+// working.
+const SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    '*': [...((defaultSchema.attributes && defaultSchema.attributes['*']) || []), 'className', 'id', 'style'],
+  },
+  // Keep <details>/<summary> (already in defaults) and allow <video>/<audio>
+  // tags for documentation. Scripts and iframes remain blocked.
+  tagNames: [...((defaultSchema.tagNames) || []), 'video', 'audio', 'source', 'track'],
 }
 
 function extractCodeText(node) {
@@ -549,6 +569,7 @@ export default function MarkdownRenderer({ content, slug, cookieConfig }) {
       remarkPlugins={[remarkGfm, remarkMath, remarkLegacyAnchorAliases]}
       rehypePlugins={[
         rehypeRaw,
+        [rehypeSanitize, SANITIZE_SCHEMA],
         rehypeSlug,
         [rehypeAutolinkHeadings, { behavior: 'append', content: { type: 'text', value: '#' } }],
         rehypeKatex,

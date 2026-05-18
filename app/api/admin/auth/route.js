@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { loadAdminConfig } from '../../../../lib/security.mjs'
-import { createToken } from '../../../../lib/admin-auth.mjs'
+import { createToken, safeEqual } from '../../../../lib/admin-auth.mjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,8 @@ export async function POST(request) {
   const adminConfig = await loadAdminConfig()
   if (!adminConfig) return NextResponse.json({ error: 'Admin not enabled' }, { status: 403 })
 
-  if (!body.password || body.password !== adminConfig.password) {
+  const submitted = typeof body.password === 'string' ? body.password : ''
+  if (!safeEqual(submitted, adminConfig.password)) {
     return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
   }
 
