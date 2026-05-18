@@ -1,24 +1,8 @@
 import path from 'path'
 import { NextResponse } from 'next/server'
 import { getContentProvider } from '../../../lib/content-provider.mjs'
-
-const MIME_TYPES = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.pdf': 'application/pdf',
-  '.zip': 'application/zip',
-  '.gz': 'application/gzip',
-  '.tar': 'application/x-tar',
-  '.mp4': 'video/mp4',
-  '.mp3': 'audio/mpeg',
-  '.txt': 'text/plain; charset=utf-8',
-  '.json': 'application/json',
-}
+import { loadSecurityRules, findRule, isWithinDateRange } from '../../../lib/security.mjs'
+import { MIME_TYPES } from '../../../lib/mime-types.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((s) => {
@@ -36,6 +20,14 @@ export async function GET(request, { params }) {
   // content-security.json contains passwords and must never be exposed.
   if (relPath.endsWith('.md') || relPath === 'content-security.json') {
     return new NextResponse(null, { status: 404 })
+  }
+
+  // Check security rules
+  const rules = await loadSecurityRules()
+  const rule = findRule(relPath, rules)
+  if (rule && !isWithinDateRange(rule)) return new NextResponse(null, { status: 404 })
+  if (rule?.password) {
+    return NextResponse.redirect(new URL(`/gate/${relPath}`, request.url))
   }
 
   const provider = getContentProvider()
