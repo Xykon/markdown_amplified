@@ -465,6 +465,40 @@ function MermaidBlock({ chart }) {
 }
 
 
+// Try every cached md-unlock password against the download API for an asset.
+// Returns true and triggers a blob download if one succeeds; false otherwise.
+async function tryProtectedDownload(assetHref) {
+  const relPath = assetHref.replace(/^\/asset\//, '')
+  const encodedPath = relPath.split('/').map(encodeURIComponent).join('/')
+  const filename = relPath.split('/').pop() || 'download'
+
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i)
+    if (!k?.startsWith('md-unlock:')) continue
+    const password = sessionStorage.getItem(k)
+    if (!password) continue
+    try {
+      const res = await fetch(`/api/asset-download/${encodedPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (!res.ok) continue
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      return true
+    } catch { /* wrong password or network error — try next */ }
+  }
+  return false
+}
+
 export default function MarkdownRenderer({ content, slug }) {
   const processedContent = useMemo(() => content, [content])
 
@@ -576,9 +610,29 @@ export default function MarkdownRenderer({ content, slug }) {
             if (!/^https?:\/\//i.test(resolved)) return false
             try { return new URL(resolved).origin !== window.location.origin } catch { return true }
           })()
+
+          const isAsset = typeof resolved === 'string' && resolved.startsWith('/asset/')
+
           return (
             <a
               href={resolved}
+              onClick={isAsset ? (e) => {
+                try {
+                  // Only intercept if there are cached unlock passwords in this session.
+                  // If a password matches, trigger a blob download and stay on the page.
+                  // If none match (wrong password or file is unprotected), fall through to
+                  // normal navigation — the asset route will serve the file or redirect to /gate/.
+                  let hasCached = false
+                  for (let i = 0; i < sessionStorage.length; i++) {
+                    if (sessionStorage.key(i)?.startsWith('md-unlock:')) { hasCached = true; break }
+                  }
+                  if (!hasCached) return
+                  e.preventDefault()
+                  tryProtectedDownload(resolved).then((success) => {
+                    if (!success) window.location.href = resolved
+                  })
+                } catch { /* let normal navigation happen */ }
+              } : undefined}
               {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               {...props}
             >

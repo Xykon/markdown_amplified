@@ -9,8 +9,6 @@ function fromBase64(b64) {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
 }
 
-// Attempts to decrypt the challenge ciphertext with the given password.
-// Throws if the password is wrong (AES-GCM authentication fails).
 async function verifyPassword(encrypted, password) {
   const enc = new TextEncoder()
   const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
@@ -82,27 +80,38 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [backUrl, setBackUrl] = useState(null)
+  const verifiedPasswordRef = useRef(null)
   const inputRef = useRef(null)
 
+  // Detect a same-origin referrer to offer a "Back to document" link
+  useEffect(() => {
+    try {
+      const ref = document.referrer
+      if (ref) {
+        const u = new URL(ref)
+        if (u.origin === window.location.origin && !u.pathname.startsWith('/gate/')) {
+          setBackUrl(ref)
+        }
+      }
+    } catch {}
+  }, [])
+
   async function doDownload(pw) {
+    setError('')
     try {
       await triggerDownload(relPath, pw, filename)
-      setPhase('done')
     } catch {
       setError('Download failed. Please try again.')
-      setPhase('password')
     }
   }
 
-  async function tryAutoDownload(pw) {
-    try {
-      await verifyPassword(encrypted, pw)
-      sessionStorage.setItem(sessionKey(encrypted), pw)
-      setPhase('downloading')
-      await doDownload(pw)
-    } catch {
-      // Wrong password — don't clear cache entry, just fall through to prompt
-    }
+  // Transition to the ready/download phase and auto-start the download
+  function readyWithPassword(pw) {
+    verifiedPasswordRef.current = pw
+    if (encrypted) sessionStorage.setItem(sessionKey(encrypted), pw)
+    setPhase('ready')
+    doDownload(pw)
   }
 
   useEffect(() => {
@@ -112,15 +121,16 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
 
     if (!encrypted) { setPhase('password'); return }
 
-    // Try the specific cached password for this ciphertext first
+    // Try the specific cached password for this ciphertext
     const key = sessionKey(encrypted)
     const cached = sessionStorage.getItem(key)
     if (cached) {
-      setPhase('downloading')
-      tryAutoDownload(cached).catch(() => {
-        sessionStorage.removeItem(key)
-        setPhase('password')
-      })
+      verifyPassword(encrypted, cached)
+        .then(() => readyWithPassword(cached))
+        .catch(() => {
+          sessionStorage.removeItem(key)
+          setPhase('password')
+        })
       return
     }
 
@@ -133,9 +143,7 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
         if (!pw) continue
         try {
           await verifyPassword(encrypted, pw)
-          sessionStorage.setItem(key, pw)
-          setPhase('downloading')
-          await doDownload(pw)
+          readyWithPassword(pw)
           return
         } catch { /* wrong password — try next */ }
       }
@@ -153,16 +161,9 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
     setError('')
     try {
       await verifyPassword(encrypted, password)
-      sessionStorage.setItem(sessionKey(encrypted), password)
-      setPhase('downloading')
-      await doDownload(password)
-    } catch (err) {
-      if (err.message === 'Download failed') {
-        setError('Download failed. Please try again.')
-        setPhase('password')
-      } else {
-        setError('Incorrect password')
-      }
+      readyWithPassword(password)
+    } catch {
+      setError('Incorrect password')
     } finally {
       setSubmitting(false)
     }
@@ -195,38 +196,48 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
     )
   }
 
-  if (phase === 'downloading') {
-    return (
-      <>
-        {header}
-        <div className="security-gate-wrap">
-          <div className="security-gate">
-            <div className="security-gate-icon"><DownloadIcon /></div>
-            <p className="security-gate-heading">Preparing download…</p>
-          </div>
-        </div>
-      </>
+  if (phase === 'ready') {
+    const downloadBtn = (
+      <button
+        type="button"
+        className="security-gate-button"
+        onClick={() => doDownload(verifiedPasswordRef.current)}
+      >
+        Download
+      </button>
     )
-  }
 
-  if (phase === 'done') {
     return (
       <>
         {header}
         <div className="security-gate-wrap">
           <div className="security-gate">
             <div className="security-gate-icon"><DownloadIcon /></div>
-            <p className="security-gate-heading">Download started</p>
-            <p className="security-gate-sub">{filename}</p>
-            <div className="security-gate-row">
-              <button
-                type="button"
-                className="security-gate-button"
-                onClick={() => doDownload(sessionStorage.getItem(sessionKey(encrypted)) || password)}
-              >
-                Download again
-              </button>
-            </div>
+            <p className="security-gate-heading">{filename}</p>
+            <p className="security-gate-sub">
+              If your download does not begin automatically in a few seconds, press the download button below.
+            </p>
+            {error && <p className="security-gate-error" role="alert">{error}</p>}
+            {backUrl ? (
+              <div className="security-gate-row">
+                {downloadBtn}
+                <a
+                  href={backUrl}
+                  className="security-gate-button"
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
+                    textAlign: 'center',
+                  }}
+                >
+                  ← Back to document
+                </a>
+              </div>
+            ) : (
+              downloadBtn
+            )}
           </div>
         </div>
       </>
