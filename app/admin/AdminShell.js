@@ -41,8 +41,8 @@ function formatDate(iso) {
 
 function LoginForm({ onLogin }) {
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -68,7 +68,7 @@ function LoginForm({ onLogin }) {
 
   return (
     <div className="admin-login">
-      <h1 className="admin-login-title">Admin</h1>
+      <h2>Admin</h2>
       <form onSubmit={handleSubmit} className="admin-login-form">
         <input
           type="password"
@@ -222,7 +222,7 @@ function FileBrowser({ onLogout, readonly }) {
   }
 
   return (
-    <div className="admin-shell">
+    <div>
       <div className="admin-toolbar">
         <Breadcrumb path={currentPath} onNavigate={navigate} />
         <div className="admin-toolbar-actions">
