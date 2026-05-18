@@ -403,7 +403,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
                 {!readonly && (
                   <td>{isProtected
-                    ? <span className="admin-protected-label" title="Deleting this file would disable admin auth and all access rules.">🔒 Protected</span>
+                    ? <span className="admin-protected-label" title="Deleting this file would disable admin auth and all access rules.">🔒</span>
                     : <button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button>
                   }</td>
                 )}
