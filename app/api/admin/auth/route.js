@@ -15,5 +15,5 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
   }
 
-  return NextResponse.json({ token: createToken(adminConfig.password) })
+  return NextResponse.json({ token: createToken(adminConfig.password), readonly: adminConfig.readonly === true })
 }

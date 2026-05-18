@@ -1802,6 +1802,17 @@ html[data-theme='dark'] .admin-btn-danger:hover {
   }
 }
 
+.admin-readonly-badge {
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
 .admin-new-folder-row {
   display: flex;
   gap: 8px;

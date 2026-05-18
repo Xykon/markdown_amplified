@@ -22,7 +22,9 @@ export async function GET(request) {
 
 // POST /api/admin/files?path=<file>  — upload file (body is raw bytes)
 export async function POST(request) {
-  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const adminConfig = await requireAdminAuth(request)
+  if (!adminConfig) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (adminConfig.readonly === true) return NextResponse.json({ error: 'Read-only mode' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const relPath = searchParams.get('path') || ''

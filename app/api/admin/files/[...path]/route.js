@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic'
 
 // DELETE /api/admin/files/<path>  — delete file
 export async function DELETE(request, { params }) {
-  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const adminConfig = await requireAdminAuth(request)
+  if (!adminConfig) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (adminConfig.readonly === true) return NextResponse.json({ error: 'Read-only mode' }, { status: 403 })
 
   const { path: segments } = await params
   const relPath = segments.join('/')

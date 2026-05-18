@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 const TOKEN_KEY = 'admin-token'
+const READONLY_KEY = 'admin-readonly'
 
 function getToken() {
   try { return sessionStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
@@ -11,7 +12,13 @@ function setToken(t) {
   try { sessionStorage.setItem(TOKEN_KEY, t) } catch { }
 }
 function clearToken() {
-  try { sessionStorage.removeItem(TOKEN_KEY) } catch { }
+  try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(READONLY_KEY) } catch { }
+}
+function getStoredReadonly() {
+  try { return sessionStorage.getItem(READONLY_KEY) === 'true' } catch { return false }
+}
+function setStoredReadonly(v) {
+  try { sessionStorage.setItem(READONLY_KEY, v ? 'true' : 'false') } catch { }
 }
 
 function authHeaders(extra = {}) {
@@ -50,7 +57,8 @@ function LoginForm({ onLogin }) {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
       setToken(data.token)
-      onLogin()
+      setStoredReadonly(data.readonly)
+      onLogin(data.readonly)
     } catch {
       setError('Network error')
     } finally {
@@ -102,7 +110,7 @@ function Breadcrumb({ path, onNavigate }) {
 
 // ── File browser ─────────────────────────────────────────────────────────────
 
-function FileBrowser({ onLogout }) {
+function FileBrowser({ onLogout, readonly }) {
   const [currentPath, setCurrentPath] = useState('')
   const [listing, setListing] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -218,20 +226,25 @@ function FileBrowser({ onLogout }) {
       <div className="admin-toolbar">
         <Breadcrumb path={currentPath} onNavigate={navigate} />
         <div className="admin-toolbar-actions">
-          <button className="admin-btn admin-btn-sm" onClick={() => { setShowNewFolder(v => !v); setNewFolderName('') }}>
-            New folder
-          </button>
-          <label className="admin-btn admin-btn-sm admin-btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-            {uploading ? 'Uploading…' : 'Upload files'}
-            <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-          </label>
+          {readonly && <span className="admin-readonly-badge">Read-only</span>}
+          {!readonly && (
+            <button className="admin-btn admin-btn-sm" onClick={() => { setShowNewFolder(v => !v); setNewFolderName('') }}>
+              New folder
+            </button>
+          )}
+          {!readonly && (
+            <label className="admin-btn admin-btn-sm admin-btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
+              {uploading ? 'Uploading…' : 'Upload files'}
+              <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+            </label>
+          )}
           <button className="admin-btn admin-btn-sm admin-btn-danger" onClick={() => { clearToken(); onLogout() }}>
             Sign out
           </button>
         </div>
       </div>
 
-      {showNewFolder && (
+      {!readonly && showNewFolder && (
         <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
           <input
             type="text"
@@ -275,7 +288,7 @@ function FileBrowser({ onLogout }) {
                 <td></td>
                 <td></td>
                 <td>
-                  <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(d.name, true)}>Delete</button>
+                  {!readonly && <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(d.name, true)}>Delete</button>}
                 </td>
               </tr>
             ))}
@@ -285,7 +298,7 @@ function FileBrowser({ onLogout }) {
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
                 <td>
-                  <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(f.name, false)}>Delete</button>
+                  {!readonly && <button className="admin-btn admin-btn-xs admin-btn-danger" onClick={() => handleDelete(f.name, false)}>Delete</button>}
                 </td>
               </tr>
             ))}
@@ -300,14 +313,23 @@ function FileBrowser({ onLogout }) {
 
 export default function AdminShell() {
   const [authed, setAuthed] = useState(null)
+  const [readonly, setReadonly] = useState(false)
 
   useEffect(() => {
-    setAuthed(!!getToken())
+    const token = getToken()
+    if (!token) { setAuthed(false); return }
+    // Refresh config from server to pick up any readonly change since last login
+    fetch('/api/admin/config', { headers: authHeaders() })
+      .then(r => {
+        if (r.status === 401) { clearToken(); setAuthed(false); return }
+        return r.json().then(d => { setStoredReadonly(d.readonly); setReadonly(d.readonly); setAuthed(true) })
+      })
+      .catch(() => { setReadonly(getStoredReadonly()); setAuthed(true) })
   }, [])
 
   if (authed === null) return null
 
-  if (!authed) return <LoginForm onLogin={() => setAuthed(true)} />
+  if (!authed) return <LoginForm onLogin={(ro) => { setReadonly(ro); setAuthed(true) }} />
 
-  return <FileBrowser onLogout={() => setAuthed(false)} />
+  return <FileBrowser onLogout={() => setAuthed(false)} readonly={readonly} />
 }

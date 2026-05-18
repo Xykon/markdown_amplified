@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic'
 
 // POST /api/admin/mkdir  — create directory
 export async function POST(request) {
-  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const adminConfig = await requireAdminAuth(request)
+  if (!adminConfig) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (adminConfig.readonly === true) return NextResponse.json({ error: 'Read-only mode' }, { status: 403 })
 
   let body
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Bad request' }, { status: 400 }) }
