@@ -306,7 +306,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
               <tr key={`d:${d.name}`} className="admin-row-dir">
                 <td>
                   <button className="admin-entry-name admin-dir-link" onClick={() => navigate(currentPath ? `${currentPath}/${d.name}` : d.name)}>
-                    📁 {d.name}
+                    📁 <span className="admin-entry-text">{d.name}</span>
                   </button>
                 </td>
                 <td className="admin-cell-meta">{formatSize(d.size)}</td>
@@ -319,8 +319,8 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
             {listing.files.map(f => (
               <tr key={`f:${f.name}`}>
                 <td>{f.name === 'content-security.json'
-                  ? <span className="admin-entry-name">📄 {f.name}</span>
-                  : <a className="admin-entry-name admin-file-link" href={`/${currentPath ? `${currentPath}/` : ''}${f.name}`} target="_blank" rel="noreferrer">📄 {f.name}</a>
+                  ? <span className="admin-entry-name">📄 <span className="admin-entry-text">{f.name}</span></span>
+                  : <a className="admin-entry-name admin-file-link" href={`/${currentPath ? `${currentPath}/` : ''}${f.name}`} target="_blank" rel="noreferrer">📄 <span className="admin-entry-text">{f.name}</span></a>
                 }</td>
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>

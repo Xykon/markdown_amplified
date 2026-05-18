@@ -1918,7 +1918,7 @@ html[data-theme='dark'] .admin-status-bar {
   color: var(--link);
 }
 
-.admin-dir-link:hover {
+.admin-dir-link:hover .admin-entry-text {
   text-decoration: underline;
 }
 
@@ -1927,7 +1927,7 @@ html[data-theme='dark'] .admin-status-bar {
   text-decoration: none;
 }
 
-.admin-file-link:hover {
+.admin-file-link:hover .admin-entry-text {
   text-decoration: underline;
 }
 

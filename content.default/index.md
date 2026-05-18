@@ -17,7 +17,7 @@ This site hosts Markdown files and renders them as readable web pages.
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
 - File storage: [Amazon S3™](https://aws.amazon.com/s3/)
 - Project documentation: [README.md](/README.md)
-- Examples: [examples.md]
+- Examples: [examples.md](/examples.md)
 
 ## Copyright and Legal Notices
 
