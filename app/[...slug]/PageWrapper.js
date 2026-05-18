@@ -2,7 +2,7 @@
 
 import SecurityGate from '../SecurityGate'
 
-export default function MarkdownPageWrapper({ slug, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen }) {
+export default function MarkdownPageWrapper({ slug, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen, cookieConfig }) {
   return (
     <SecurityGate
       slug={slug}
@@ -13,6 +13,7 @@ export default function MarkdownPageWrapper({ slug, content, encrypted, validFro
       hasDownload={hasDownload}
       homeUrl={homeUrl}
       tocOpen={tocOpen}
+      cookieConfig={cookieConfig}
     />
   )
 }

@@ -316,6 +316,48 @@ The table of contents opens by default on desktop when a document has headings. 
 
 The TOC is always hidden on mobile regardless of this setting.
 
+## Persistent Password Cookies
+
+By default, unlock passwords are stored in `sessionStorage` and are forgotten when the browser tab is closed. Enabling cookie storage keeps them across sessions so returning visitors do not have to re-enter passwords.
+
+Add a `cookies` block to `content-security.json`:
+
+```json
+{
+  "cookies": {
+    "enabled": true,
+    "prefix": "md",
+    "maxAge": 2592000,
+    "domain": null,
+    "storeAdmin": false
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Set to `true` to activate cookie storage. |
+| `prefix` | string | `"md"` | Prefix for all cookie names (e.g. `md-unlock-…`, `md-admin`). Change if you run multiple instances on the same domain. |
+| `maxAge` | number | `2592000` | Cookie lifetime in seconds. Default is 30 days. |
+| `domain` | string or `null` | `null` | If set to a domain string such as `"ehlers.tv"`, the cookie is accessible to all subdomains (e.g. `www.ehlers.tv`, `private.ehlers.tv`). Leave `null` to scope cookies to the exact hostname only. |
+| `storeAdmin` | boolean | `false` | If `true`, the admin session token is also stored in a cookie so the admin interface stays logged in across browser sessions. |
+
+**Example — cross-subdomain cookies with a 7-day expiry:**
+
+```json
+{
+  "cookies": {
+    "enabled": true,
+    "prefix": "mysite",
+    "maxAge": 604800,
+    "domain": "ehlers.tv",
+    "storeAdmin": false
+  }
+}
+```
+
+Cookies are set with `SameSite=Strict` and, when the site is served over HTTPS, `Secure`. They are regular JavaScript-readable cookies (not `HttpOnly`) because unlock passwords must be accessible to the client-side AES decryption code.
+
 ## S3 Content Backend
 
 By default the site reads markdown files from the local `content/` directory (or `content.default/`). Setting the `S3_BUCKET` environment variable switches to an S3 backend — all file reads happen at request time from the specified bucket, with no local content needed in the deployed bundle.

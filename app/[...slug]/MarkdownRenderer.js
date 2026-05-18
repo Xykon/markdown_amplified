@@ -465,18 +465,36 @@ function MermaidBlock({ chart }) {
 }
 
 
-// Try every cached md-unlock password against the download API for an asset.
+// Collect all cached unlock passwords from sessionStorage + cookies, deduplicated.
+function collectUnlockPasswords(cookieConfig) {
+  const seen = new Set()
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i)
+    if (k?.startsWith('md-unlock:')) {
+      const v = sessionStorage.getItem(k)
+      if (v) seen.add(v)
+    }
+  }
+  if (cookieConfig) {
+    for (const part of document.cookie.split('; ')) {
+      const eq = part.indexOf('=')
+      if (eq > 0 && part.slice(0, eq).startsWith(`${cookieConfig.prefix}-unlock-`)) {
+        const v = decodeURIComponent(part.slice(eq + 1))
+        if (v) seen.add(v)
+      }
+    }
+  }
+  return Array.from(seen)
+}
+
+// Try every cached unlock password against the download API for an asset.
 // Returns true and triggers a blob download if one succeeds; false otherwise.
-async function tryProtectedDownload(assetHref) {
+async function tryProtectedDownload(assetHref, cookieConfig) {
   const relPath = assetHref.replace(/^\/asset\//, '')
   const encodedPath = relPath.split('/').map(encodeURIComponent).join('/')
   const filename = relPath.split('/').pop() || 'download'
 
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const k = sessionStorage.key(i)
-    if (!k?.startsWith('md-unlock:')) continue
-    const password = sessionStorage.getItem(k)
-    if (!password) continue
+  for (const password of collectUnlockPasswords(cookieConfig)) {
     try {
       const res = await fetch(`/api/asset-download/${encodedPath}`, {
         method: 'POST',
@@ -499,7 +517,7 @@ async function tryProtectedDownload(assetHref) {
   return false
 }
 
-export default function MarkdownRenderer({ content, slug }) {
+export default function MarkdownRenderer({ content, slug, cookieConfig }) {
   const processedContent = useMemo(() => content, [content])
 
   // Compute the directory portion of the current page's slug so relative
@@ -622,13 +640,10 @@ export default function MarkdownRenderer({ content, slug }) {
                   // If a password matches, trigger a blob download and stay on the page.
                   // If none match (wrong password or file is unprotected), fall through to
                   // normal navigation — the asset route will serve the file or redirect to /gate/.
-                  let hasCached = false
-                  for (let i = 0; i < sessionStorage.length; i++) {
-                    if (sessionStorage.key(i)?.startsWith('md-unlock:')) { hasCached = true; break }
-                  }
+                  let hasCached = collectUnlockPasswords(cookieConfig).length > 0
                   if (!hasCached) return
                   e.preventDefault()
-                  tryProtectedDownload(resolved).then((success) => {
+                  tryProtectedDownload(resolved, cookieConfig).then((success) => {
                     if (!success) window.location.href = resolved
                   })
                 } catch { /* let normal navigation happen */ }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { adminCookieName, readCookie, writeCookie, deleteCookie } from '../pw-cookie'
 
 const TOKEN_KEY = 'admin-token'
 const READONLY_KEY = 'admin-readonly'
@@ -12,8 +13,9 @@ function getToken() {
 function setToken(t) {
   try { sessionStorage.setItem(TOKEN_KEY, t) } catch { }
 }
-function clearToken() {
+function clearToken(cookieConfig) {
   try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(READONLY_KEY) } catch { }
+  if (cookieConfig) deleteCookie(adminCookieName(cookieConfig.prefix), cookieConfig)
 }
 function getStoredReadonly() {
   try { return sessionStorage.getItem(READONLY_KEY) === 'true' } catch { return false }
@@ -57,9 +59,7 @@ function LoginForm({ onLogin }) {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
-      setToken(data.token)
-      setStoredReadonly(data.readonly)
-      onLogin(data.readonly)
+      onLogin(data.token, data.readonly)
     } catch {
       setError('Network error')
     } finally {
@@ -135,7 +135,7 @@ function WriteActions({ onToggleNewFolder, uploading, fileInputRef, onUpload, on
 
 // ── File browser ─────────────────────────────────────────────────────────────
 
-function FileBrowser({ onLogout, readonly }) {
+function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [currentPath, setCurrentPath] = useState('')
   const [listing, setListing]         = useState(null)
   const [loading, setLoading]         = useState(false)
@@ -154,7 +154,7 @@ function FileBrowser({ onLogout, readonly }) {
       const res = await fetch(`/api/admin/files?path=${encodeURIComponent(path)}`, {
         headers: authHeaders(),
       })
-      if (res.status === 401) { clearToken(); onLogout(); return }
+      if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
       if (!res.ok) { setError('Failed to load directory'); setLoading(false); return }
       setListing(await res.json())
       setCurrentPath(path)
@@ -187,7 +187,7 @@ function FileBrowser({ onLogout, readonly }) {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (res.status === 401) { clearToken(); onLogout(); return }
+      if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Delete failed'); return }
       setStatus(`Deleted "${name}"`)
       load(currentPath)
@@ -211,7 +211,7 @@ function FileBrowser({ onLogout, readonly }) {
           headers: authHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
           body: file,
         })
-        if (res.status === 401) { clearToken(); onLogout(); return }
+        if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
         if (!res.ok) { const d = await res.json(); setError(d.error || `Upload failed: ${file.name}`); break }
         uploaded++
       } catch {
@@ -240,7 +240,7 @@ function FileBrowser({ onLogout, readonly }) {
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ path: relPath }),
       })
-      if (res.status === 401) { clearToken(); onLogout(); return }
+      if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Create folder failed'); return }
       setStatus(`Created folder "${name}"`)
       setNewFolderName('')
@@ -261,7 +261,7 @@ function FileBrowser({ onLogout, readonly }) {
         <Breadcrumb path={currentPath} onNavigate={navigate} />
         <div className="admin-topbar-right">
           {readonly && <span className="admin-readonly-badge">Read-only</span>}
-          <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(); onLogout() }}>
+          <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(cookieConfig); onLogout() }}>
             Sign out
           </button>
         </div>
@@ -354,22 +354,40 @@ function FileBrowser({ onLogout, readonly }) {
 
 // ── Root shell ───────────────────────────────────────────────────────────────
 
-export default function AdminShell() {
-  const [authed, setAuthed]   = useState(null)
+export default function AdminShell({ cookieConfig }) {
+  const [authed, setAuthed]     = useState(null)
   const [readonly, setReadonly] = useState(false)
 
   useEffect(() => {
-    const token = getToken()
+    // Check sessionStorage first, then cookie
+    let token = getToken()
+    if (!token && cookieConfig) {
+      token = readCookie(adminCookieName(cookieConfig.prefix)) || ''
+      if (token) setToken(token)
+    }
     if (!token) { setAuthed(false); return }
     fetch('/api/admin/config', { headers: authHeaders() })
       .then(r => {
-        if (r.status === 401) { clearToken(); setAuthed(false); return }
+        if (r.status === 401) { clearToken(cookieConfig); setAuthed(false); return }
         return r.json().then(d => { setStoredReadonly(d.readonly); setReadonly(d.readonly); setAuthed(true) })
       })
       .catch(() => { setReadonly(getStoredReadonly()); setAuthed(true) })
   }, [])
 
+  function handleLogin(token, ro) {
+    setToken(token)
+    setStoredReadonly(ro)
+    if (cookieConfig) writeCookie(adminCookieName(cookieConfig.prefix), token, cookieConfig)
+    setReadonly(ro)
+    setAuthed(true)
+  }
+
+  function handleLogout() {
+    clearToken(cookieConfig)
+    setAuthed(false)
+  }
+
   if (authed === null) return null
-  if (!authed) return <LoginForm onLogin={(ro) => { setReadonly(ro); setAuthed(true) }} />
-  return <FileBrowser onLogout={() => setAuthed(false)} readonly={readonly} />
+  if (!authed) return <LoginForm onLogin={handleLogin} />
+  return <FileBrowser onLogout={handleLogout} readonly={readonly} cookieConfig={cookieConfig} />
 }

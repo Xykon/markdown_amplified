@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, findRule, findHomeUrl, findTocOpen, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadCookieConfig, findRule, findHomeUrl, findTocOpen, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -38,7 +38,7 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : path.posix.join(requested, 'index.md')
 
-  const [rules, globalHome, globalToc] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc()])
+  const [rules, globalHome, globalToc, cookieConfig] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadCookieConfig()])
   const rule = findRule(relativeFile, rules)
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
@@ -69,6 +69,7 @@ export default async function MarkdownPage({ params }) {
       hasDownload={isDownloadAllowed(rule)}
       homeUrl={homeUrl ?? undefined}
       tocOpen={tocOpen}
+      cookieConfig={cookieConfig ?? undefined}
     />
   )
 }

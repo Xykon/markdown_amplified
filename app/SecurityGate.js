@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import MarkdownShell from './MarkdownShell'
+import { unlockCookieName, readCookie, writeCookie, allCookiePasswords } from './pw-cookie'
 
 const PBKDF2_ITERATIONS = 100_000
 
@@ -42,20 +43,31 @@ function sessionKey(encrypted) {
   return `md-unlock:${encrypted.ciphertext.slice(0, 24)}`
 }
 
-// Try every password cached from other protected pages in this session.
-// If one decrypts this ciphertext, cache it under the new key and return it.
-async function tryStoredPasswords(encrypted) {
-  const key = sessionKey(encrypted)
+// Collect all candidate passwords from sessionStorage + cookies, deduplicated.
+function collectPasswords(currentKey, cookieConfig) {
+  const seen = new Set()
   for (let i = 0; i < sessionStorage.length; i++) {
     const k = sessionStorage.key(i)
-    if (!k?.startsWith('md-unlock:') || k === key) continue
-    const password = sessionStorage.getItem(k)
-    if (!password) continue
+    if (!k?.startsWith('md-unlock:') || k === currentKey) continue
+    const v = sessionStorage.getItem(k)
+    if (v) seen.add(v)
+  }
+  if (cookieConfig) {
+    for (const pw of allCookiePasswords(cookieConfig.prefix)) seen.add(pw)
+  }
+  return Array.from(seen)
+}
+
+// Try every password cached from other protected pages.
+// If one decrypts this ciphertext, cache it and return the plaintext.
+async function tryStoredPasswords(encrypted, cookieConfig) {
+  const key = sessionKey(encrypted)
+  for (const password of collectPasswords(key, cookieConfig)) {
     try {
       const text = await decryptContent(encrypted, password)
       sessionStorage.setItem(key, password)
       return text
-    } catch { /* wrong password for this ciphertext — try next */ }
+    } catch { /* wrong password — try next */ }
   }
   return null
 }
@@ -86,7 +98,7 @@ function CalendarIcon() {
 // - content: plaintext markdown for date-only pages, null for password-protected pages
 // - hasDownload: whether the download button is shown (mirrors the downloads route)
 // After any gate is cleared, delegates to MarkdownShell for normal rendering.
-export default function SecurityGate({ slug, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen }) {
+export default function SecurityGate({ slug, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen, cookieConfig }) {
   const [phase, setPhase] = useState('init')
   const [resolvedContent, setResolvedContent] = useState(content)
   const [password, setPassword] = useState('')
@@ -115,7 +127,13 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
       return
     }
 
-    const cached = sessionStorage.getItem(sessionKey(encrypted))
+    const key = sessionKey(encrypted)
+    let cached = sessionStorage.getItem(key)
+    // Fall back to cookie if sessionStorage has no entry (e.g. new tab/session)
+    if (!cached && cookieConfig) {
+      cached = readCookie(unlockCookieName(cookieConfig.prefix, encrypted.ciphertext.slice(0, 24)))
+      if (cached) sessionStorage.setItem(key, cached)
+    }
     if (cached) {
       decryptContent(encrypted, cached)
         .then((text) => {
@@ -123,11 +141,11 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
           setPhase('open')
         })
         .catch(() => {
-          sessionStorage.removeItem(sessionKey(encrypted))
+          sessionStorage.removeItem(key)
           setPhase('password')
         })
     } else {
-      tryStoredPasswords(encrypted).then((text) => {
+      tryStoredPasswords(encrypted, cookieConfig).then((text) => {
         if (text !== null) {
           setResolvedContent(text)
           setPhase('open')
@@ -148,7 +166,10 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
     setError('')
     try {
       const text = await decryptContent(encrypted, password)
-      sessionStorage.setItem(sessionKey(encrypted), password)
+      const sKey = sessionKey(encrypted)
+      sessionStorage.setItem(sKey, password)
+      if (cookieConfig)
+        writeCookie(unlockCookieName(cookieConfig.prefix, encrypted.ciphertext.slice(0, 24)), password, cookieConfig)
       setResolvedContent(text)
       setPhase('open')
     } catch {
@@ -161,7 +182,7 @@ export default function SecurityGate({ slug, content, encrypted, validFrom, vali
   if (phase === 'init') return null
 
   if (phase === 'open') {
-    return <MarkdownShell slug={slug} content={resolvedContent} hasDownload={hasDownload} homeUrl={homeUrl} tocOpen={tocOpen} />
+    return <MarkdownShell slug={slug} content={resolvedContent} hasDownload={hasDownload} homeUrl={homeUrl} tocOpen={tocOpen} cookieConfig={cookieConfig} />
   }
 
   if (phase === 'date-locked') {

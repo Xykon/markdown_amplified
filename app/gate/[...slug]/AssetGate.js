@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Header from '../../Header'
+import { unlockCookieName, readCookie, writeCookie, allCookiePasswords } from '../../pw-cookie'
 
 const PBKDF2_ITERATIONS = 100_000
 
@@ -75,7 +76,7 @@ function DownloadIcon() {
   )
 }
 
-export default function AssetGate({ relPath, filename, encrypted, validFrom, validUntil, homeUrl }) {
+export default function AssetGate({ relPath, filename, encrypted, validFrom, validUntil, homeUrl, cookieConfig }) {
   const [phase, setPhase] = useState('init')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -109,7 +110,11 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
   // Transition to the ready/download phase and auto-start the download
   function readyWithPassword(pw) {
     verifiedPasswordRef.current = pw
-    if (encrypted) sessionStorage.setItem(sessionKey(encrypted), pw)
+    if (encrypted) {
+      sessionStorage.setItem(sessionKey(encrypted), pw)
+      if (cookieConfig)
+        writeCookie(unlockCookieName(cookieConfig.prefix, encrypted.ciphertext.slice(0, 24)), pw, cookieConfig)
+    }
     setPhase('ready')
     doDownload(pw)
   }
@@ -123,7 +128,11 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
 
     // Try the specific cached password for this ciphertext
     const key = sessionKey(encrypted)
-    const cached = sessionStorage.getItem(key)
+    let cached = sessionStorage.getItem(key)
+    if (!cached && cookieConfig) {
+      cached = readCookie(unlockCookieName(cookieConfig.prefix, encrypted.ciphertext.slice(0, 24)))
+      if (cached) sessionStorage.setItem(key, cached)
+    }
     if (cached) {
       verifyPassword(encrypted, cached)
         .then(() => readyWithPassword(cached))
@@ -134,13 +143,19 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
       return
     }
 
-    // Try passwords cached from other protected pages in this session
+    // Try passwords cached from other protected pages (sessionStorage + cookies)
     ;(async () => {
+      const seen = new Set()
       for (let i = 0; i < sessionStorage.length; i++) {
         const k = sessionStorage.key(i)
         if (!k?.startsWith('md-unlock:') || k === key) continue
         const pw = sessionStorage.getItem(k)
-        if (!pw) continue
+        if (pw) seen.add(pw)
+      }
+      if (cookieConfig) {
+        for (const pw of allCookiePasswords(cookieConfig.prefix)) seen.add(pw)
+      }
+      for (const pw of seen) {
         try {
           await verifyPassword(encrypted, pw)
           readyWithPassword(pw)
