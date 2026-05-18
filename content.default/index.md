@@ -10,16 +10,15 @@ This site hosts Markdown files and renders them as readable web pages.
 - Optional Admin Interface with file browser
 - Optional cookie support for passwords
 
-
 ## Project Links
 
+- Default Content Examples: [examples.md](/examples.md)
+- Project documentation: [README.md](/README.md)
 - Public source repository: [Xykon/markdown_amplified](https://github.com/Xykon/markdown_amplified)
 - GitHub bug tracker: [Xykon/Projects/@Markdown Aplified Bug Tracker](https://github.com/users/Xykon/projects/1)
 - License: [MIT License](https://github.com/Xykon/markdown_amplified/blob/main/LICENSE)
 - Hosting platform: [AWS Amplify™](https://aws.amazon.com/amplify/)
 - File storage: [Amazon S3™](https://aws.amazon.com/s3/)
-- Project documentation: [README.md](/README.md)
-- Default Content Examples: [examples.md](/examples.md)
 
 ## Copyright and Legal Notices
 

@@ -40,6 +40,11 @@ function formatDate(iso) {
   try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 
+function buildFileHref(currentPath, fileName) {
+  const relPath = currentPath ? `${currentPath}/${fileName}` : fileName
+  return fileName.toLowerCase().endsWith('.md') ? `/${relPath}` : `/asset/${relPath}`
+}
+
 // ── Login form ──────────────────────────────────────────────────────────────
 
 function LoginForm({ onLogin }) {
@@ -121,6 +126,9 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [showNewFolderBottom, setShowNewFolderBottom] = useState(false)
   const [uploading, setUploading]     = useState(false)
+  const [confirmDir, setConfirmDir]   = useState(null) // { name, fullPath, count, size }
+  const [confirmName, setConfirmName] = useState('')
+  const [deleting, setDeleting]       = useState(false)
   const fileInputRef = useRef(null)
 
   const load = useCallback(async (path) => {
@@ -162,7 +170,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
     setNewFolderName('')
   }
 
-  async function handleDelete(name) {
+  async function handleDeleteFile(name) {
     const fullPath = currentPath ? `${currentPath}/${name}` : name
     if (!confirm(`Delete "${fullPath}"?`)) return
     setStatus('')
@@ -178,6 +186,73 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
       load(currentPath)
     } catch {
       setError('Network error')
+    }
+  }
+
+  // Try a non-recursive folder delete. If empty, the server removes any
+  // directory marker and we refresh. If non-empty, the server returns 409
+  // with { count, size } — open the confirmation modal.
+  async function handleDeleteDir(name) {
+    const fullPath = currentPath ? `${currentPath}/${name}` : name
+    setStatus('')
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/files/${encodeURIComponent(fullPath).replace(/%2F/g, '/')}?type=dir`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
+      if (res.ok) {
+        setStatus(`Deleted "${name}"`)
+        load(currentPath)
+        return
+      }
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 409 && data.error === 'not_empty') {
+        setConfirmDir({ name, fullPath, count: data.count ?? 0, size: data.size ?? 0 })
+        setConfirmName('')
+        return
+      }
+      if (res.status === 413 && data.error === 'too_large') {
+        setError(`Folder is too large to delete from the admin UI (${data.count} items, ${formatSize(data.size)}). Use the AWS CLI or filesystem tools.`)
+        return
+      }
+      setError(data.error || 'Delete failed')
+    } catch {
+      setError('Network error')
+    }
+  }
+
+  async function confirmRecursiveDelete() {
+    if (!confirmDir) return
+    setDeleting(true)
+    setError('')
+    setStatus('')
+    try {
+      const res = await fetch(`/api/admin/files/${encodeURIComponent(confirmDir.fullPath).replace(/%2F/g, '/')}?type=dir&recursive=1`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (res.status === 401) { clearToken(cookieConfig); onLogout(); return }
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setStatus(`Deleted "${confirmDir.name}" (${data.count ?? confirmDir.count} items)`)
+        setConfirmDir(null)
+        load(currentPath)
+        return
+      }
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 413 && data.error === 'too_large') {
+        setError(`Folder is too large to delete from the admin UI (${data.count} items, ${formatSize(data.size)}).`)
+      } else {
+        setError(data.error || 'Delete failed')
+      }
+      setConfirmDir(null)
+    } catch {
+      setError('Network error')
+      setConfirmDir(null)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -312,7 +387,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
                 <td className="admin-cell-meta">{formatSize(d.size)}</td>
                 <td className="admin-cell-meta">{formatDate(d.lastModified)}</td>
                 {!readonly && (
-                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDelete(d.name)}>Delete</button></td>
+                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteDir(d.name)}>Delete</button></td>
                 )}
               </tr>
             ))}
@@ -320,12 +395,12 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
               <tr key={`f:${f.name}`}>
                 <td>{f.name === 'content-security.json'
                   ? <span className="admin-entry-name">📄 <span className="admin-entry-text">{f.name}</span></span>
-                  : <a className="admin-entry-name admin-file-link" href={`/${currentPath ? `${currentPath}/` : ''}${f.name}`} target="_blank" rel="noreferrer">📄 <span className="admin-entry-text">{f.name}</span></a>
+                  : <a className="admin-entry-name admin-file-link" href={buildFileHref(currentPath, f.name)} target="_blank" rel="noreferrer">📄 <span className="admin-entry-text">{f.name}</span></a>
                 }</td>
                 <td className="admin-cell-meta">{formatSize(f.size)}</td>
                 <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
                 {!readonly && (
-                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDelete(f.name)}>Delete</button></td>
+                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button></td>
                 )}
               </tr>
             ))}
@@ -362,6 +437,70 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
           <button type="button" className="admin-btn" onClick={() => setShowNewFolderBottom(false)}>Cancel</button>
         </form>
       )}
+
+      {confirmDir && (
+        <DeleteFolderModal
+          info={confirmDir}
+          typedName={confirmName}
+          onTypedNameChange={setConfirmName}
+          onCancel={() => { setConfirmDir(null); setConfirmName('') }}
+          onConfirm={confirmRecursiveDelete}
+          busy={deleting}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Folder delete confirmation modal ─────────────────────────────────────────
+
+const DELETE_TYPED_NAME_THRESHOLD_ITEMS = 50
+const DELETE_TYPED_NAME_THRESHOLD_BYTES = 50 * 1024 * 1024 // 50 MB
+
+function DeleteFolderModal({ info, typedName, onTypedNameChange, onCancel, onConfirm, busy }) {
+  const requiresTyped =
+    info.count >= DELETE_TYPED_NAME_THRESHOLD_ITEMS ||
+    info.size  >= DELETE_TYPED_NAME_THRESHOLD_BYTES
+  const canConfirm = !busy && (!requiresTyped || typedName === info.name)
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape' && !busy) onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [busy, onCancel])
+
+  return (
+    <div className="admin-modal-backdrop" onClick={() => !busy && onCancel()}>
+      <div className="admin-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3 className="admin-modal-title">Delete folder “{info.name}”?</h3>
+        <div className="admin-modal-body">
+          <p>
+            This folder contains <strong>{info.count}</strong> item{info.count === 1 ? '' : 's'} totaling <strong>{formatSize(info.size)}</strong>.
+            Recursive deletion is permanent and cannot be undone.
+          </p>
+          {requiresTyped && (
+            <p>
+              Type the folder name <code>{info.name}</code> to confirm:
+              <input
+                type="text"
+                className="admin-input admin-modal-input"
+                value={typedName}
+                onChange={e => onTypedNameChange(e.target.value)}
+                disabled={busy}
+                autoFocus
+              />
+            </p>
+          )}
+        </div>
+        <div className="admin-modal-actions">
+          <button className="admin-btn" onClick={onCancel} disabled={busy} autoFocus={!requiresTyped}>Cancel</button>
+          <button className="admin-btn admin-btn-danger" onClick={onConfirm} disabled={!canConfirm}>
+            {busy ? 'Deleting…' : `Delete ${info.count} item${info.count === 1 ? '' : 's'}`}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
