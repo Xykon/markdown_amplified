@@ -447,7 +447,7 @@ You will add these as Amplify environment variables in the next step.
 
 ### Setting the variables on Amplify
 
-In the Amplify Console → **Hosting → Environment variables**, add:
+In the Amplify Console → **Hosting → Environment variables**, add the following as **global** variables (branch: *All branches*):
 
 | Key | Value |
 |---|---|
@@ -458,6 +458,15 @@ In the Amplify Console → **Hosting → Environment variables**, add:
 | `S3_SECRET_ACCESS_KEY` | Secret access key from Step 2 above |
 
 Click **Save** and trigger a new deployment — push a commit or use **Redeploy this version** in the Amplify Console. The variables are baked into the Lambda bundle at build time, so they take effect only after the next successful build.
+
+#### Running multiple branches with different storage modes
+
+Amplify requires at least one global value for every variable; you cannot create a per-branch-only variable. To revert a specific branch (e.g. `dev`) to **filesystem mode** while keeping S3 active on `main`, add a per-branch override for that branch and set `S3_BUCKET` to the literal value `null`. The app treats `null`, `Null`, and `NULL` as unset and falls back to the local `content/` directory for that branch.
+
+| Branch | `S3_BUCKET` | Result |
+|--------|-------------|--------|
+| All branches | `my-bucket` | S3 mode (default for every branch) |
+| `dev` override | `null` | Filesystem mode for `dev` only |
 
 ### Security config in S3
 
@@ -496,7 +505,7 @@ Follow the steps in [Create the S3 bucket](#create-the-s3-bucket) and [Create an
 
 **3. Set the environment variables and redeploy**
 
-Add `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` in the Amplify Console (see [Setting the variables on Amplify](#setting-the-variables-on-amplify)). Push a commit or use **Redeploy this version** to trigger a fresh build. The build bakes the credentials into the Lambda bundle and the site switches to S3 mode.
+Add `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` as **global** (All branches) variables in the Amplify Console (see [Setting the variables on Amplify](#setting-the-variables-on-amplify)). Push a commit or use **Redeploy this version** to trigger a fresh build. The build bakes the credentials into the Lambda bundle and the site switches to S3 mode.
 
 **4. Publish new content without redeploying**
 
