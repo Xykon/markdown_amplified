@@ -3,5 +3,26 @@
     "enabled": true,
     "password": "DemoAdmin2026#",
     "readonly": true
-  }
+  },
+  "cookies": {
+    "enabled": true,
+    "prefix": "ma",
+    "maxAge": 7776000,
+    "domain": "ehlers.tv",
+    "storeAdmin": true
+  },
+  "rules": [
+    {
+      "match": "secret/",
+      "password": "secret"
+    },
+    {
+      "match": "secret/password.md",
+      "password": "password"
+    },
+    {
+      "match": "secret/password.zip",
+      "password": "password"
+    }
+  ]
 }
