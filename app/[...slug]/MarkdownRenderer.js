@@ -29,6 +29,11 @@ const HIGHLIGHT_ALIASES = {
 // working.
 const SANITIZE_SCHEMA = {
   ...defaultSchema,
+  // The default clobberPrefix is 'user-content-', which renames id/name attrs
+  // to prevent collisions with browser native IDs. We disable it because our
+  // anchor IDs are intentional (set by rehype-slug / remarkLegacyAnchorAliases)
+  // and the prefix breaks TOC navigation.
+  clobberPrefix: '',
   attributes: {
     ...defaultSchema.attributes,
     '*': [...((defaultSchema.attributes && defaultSchema.attributes['*']) || []), 'className', 'id', 'style'],
