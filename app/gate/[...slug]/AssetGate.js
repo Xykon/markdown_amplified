@@ -76,7 +76,7 @@ function DownloadIcon() {
   )
 }
 
-export default function AssetGate({ relPath, filename, encrypted, validFrom, validUntil, homeUrl, cookieConfig }) {
+export default function AssetGate({ relPath, filename, encrypted, validFrom, validUntil, homeUrl, cookieConfig, siteName }) {
   const [phase, setPhase] = useState('init')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -186,7 +186,7 @@ export default function AssetGate({ relPath, filename, encrypted, validFrom, val
 
   if (phase === 'init') return null
 
-  const header = <Header slug={null} hasToc={false} homeUrl={homeUrl} />
+  const header = <Header slug={null} hasToc={false} homeUrl={homeUrl} siteName={siteName} />
 
   if (phase === 'date-locked') {
     const upcoming = validFrom && new Date() < new Date(validFrom)

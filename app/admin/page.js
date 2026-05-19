@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation'
-import { loadAdminConfig, loadGlobalHome, loadCookieConfig } from '../../lib/security.mjs'
+import { loadAdminConfig, loadGlobalHome, loadSiteName, loadCookieConfig } from '../../lib/security.mjs'
 import Header from '../Header'
 import AdminShell from './AdminShell.js'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
-  const [adminConfig, globalHome, cookieConfig] = await Promise.all([loadAdminConfig(), loadGlobalHome(), loadCookieConfig()])
+  const [adminConfig, globalHome, cookieConfig, siteName] = await Promise.all([loadAdminConfig(), loadGlobalHome(), loadCookieConfig(), loadSiteName()])
   if (!adminConfig) notFound()
 
   let homeUrl = null
@@ -15,7 +15,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <Header homeUrl={homeUrl} />
+      <Header homeUrl={homeUrl} siteName={siteName} />
       <div className="page-layout no-toc">
         <article className="markdown-body">
           <AdminShell cookieConfig={cookieConfig?.storeAdmin ? cookieConfig : undefined} />

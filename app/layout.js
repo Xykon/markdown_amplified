@@ -3,7 +3,7 @@ import 'katex/dist/katex.min.css'
 import { ThemeProvider } from './ThemeContext'
 
 export const metadata = {
-  title: 'Markdown Viewer',
+  title: 'Markdown Amplified',
 }
 
 export default function RootLayout({ children }) {

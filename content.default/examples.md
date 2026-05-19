@@ -74,15 +74,15 @@ The more-specific rule wins over the directory rule, so `secret` will *not* work
 
 ## Password-protected asset downloads
 
-Asset downloads use the `/gate/` route. The browser shows a password prompt; after a correct entry the file is streamed directly to your device.
+If the password for the file is not already entered, the browser shows a password prompt; after a correct entry the file is streamed directly to your device.
 
-### [/gate/secret/secret.zip](/gate/secret/secret.zip)
+### [secret/secret.zip](secret/secret.zip)
 
 **Password: `secret`** (covered by the folder rule `secret/`)
 
 A ZIP archive containing `secret.md`. No per-file rule needed — the directory rule applies to binary assets as well as markdown pages.
 
-### [/gate/secret/password.zip](/gate/secret/password.zip)
+### [secret/password.zip](secret/password.zip)
 
 **Password: `password`**
 

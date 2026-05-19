@@ -1,5 +1,7 @@
 {
-  "comment": "Global home button default. The home button is enabled by default and links to the site root (/). Set 'home' here to change the default for all pages: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled).",
+  "comment": "Optional site name shown in the header. Defaults to 'Markdown Amplified' if omitted.",
+  "name": "Markdown Amplified",
+  "comment1": "Global home button default. The home button is enabled by default and links to the site root (/). Set 'home' here to change the default for all pages: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled).",
   "home": "site",
   "comment2": "Global TOC default. The TOC opens by default on desktop. Set 'toc' to false to start it closed on all pages.",
   "toc": true,

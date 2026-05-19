@@ -5,7 +5,7 @@ import { ThemeContext } from './ThemeContext'
 
 const SOURCE_REPO_URL = 'https://github.com/Xykon/markdown_amplified'
 
-export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl }) {
+export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
 
@@ -139,7 +139,7 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               </svg>
             </button>
           )}
-          <h1 className="header-title">Markdown Viewer</h1>
+          <h1 className="header-title">{siteName ?? 'Markdown Amplified'}</h1>
         </div>
         <div className="header-buttons">
           {slug && (

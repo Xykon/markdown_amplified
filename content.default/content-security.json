@@ -1,4 +1,6 @@
 {
+  "name": "Markdown Amplified",
+  "home": "site",
   "admin": {
     "enabled": true,
     "password": "DemoAdmin2026#",
@@ -18,11 +20,13 @@
     },
     {
       "match": "secret/password.md",
-      "password": "password"
+      "password": "password",
+      "download": false
     },
     {
       "match": "secret/password.zip",
-      "password": "password"
+      "password": "password",
+      "download": false
     }
   ]
 }
