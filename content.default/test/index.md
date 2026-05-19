@@ -194,6 +194,18 @@ classDiagram
 licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
 No changes were made.*
 
+## HTML Elements
+
+Superscript: x<sup>2</sup> + y<sup>2</sup> = z<sup>2</sup>
+
+Subscript: H<sub>2</sub>O, O<sub>2</sub>
+
+Keyboard keys: Press <kbd>Ctrl</kbd> + <kbd>P</kbd> to print
+
+HTML abbreviation with tooltip: <abbr title="HyperText Markup Language">HTML</abbr> and <abbr title="Cascading Style Sheets">CSS</abbr> work together.
+
+Highlighted text: This sentence contains <mark>highlighted text</mark> for emphasis.
+
 ## Horizontal Rule
 
 Above the rule.

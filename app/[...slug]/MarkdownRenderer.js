@@ -652,7 +652,14 @@ export default function MarkdownRenderer({ content, slug, cookieConfig }) {
             try { return new URL(resolved).origin !== window.location.origin } catch { return true }
           })()
 
-          const isAsset = typeof resolved === 'string' && resolved.startsWith('/asset/')
+          // Intercept both /asset/ and /gate/ links. /gate/ links are converted
+          // to the /asset/ equivalent for the silent download attempt; if no cached
+          // password matches, fall back to normal navigation to /gate/.
+          const isAsset = typeof resolved === 'string' &&
+            (resolved.startsWith('/asset/') || resolved.startsWith('/gate/'))
+          const assetHref = isAsset && resolved.startsWith('/gate/')
+            ? resolved.replace(/^\/gate\//, '/asset/')
+            : resolved
 
           return (
             <a
@@ -666,7 +673,7 @@ export default function MarkdownRenderer({ content, slug, cookieConfig }) {
                   let hasCached = collectUnlockPasswords(cookieConfig).length > 0
                   if (!hasCached) return
                   e.preventDefault()
-                  tryProtectedDownload(resolved, cookieConfig).then((success) => {
+                  tryProtectedDownload(assetHref, cookieConfig).then((success) => {
                     if (!success) window.location.href = resolved
                   })
                 } catch { /* let normal navigation happen */ }
