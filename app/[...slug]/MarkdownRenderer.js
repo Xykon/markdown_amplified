@@ -32,10 +32,12 @@ const SANITIZE_SCHEMA = {
   attributes: {
     ...defaultSchema.attributes,
     '*': [...((defaultSchema.attributes && defaultSchema.attributes['*']) || []), 'className', 'id', 'style'],
+    abbr: ['title'],
   },
   // Keep <details>/<summary> (already in defaults) and allow <video>/<audio>
   // tags for documentation. Scripts and iframes remain blocked.
-  tagNames: [...((defaultSchema.tagNames) || []), 'video', 'audio', 'source', 'track'],
+  // <abbr> for tooltips, <mark> for highlighted text.
+  tagNames: [...((defaultSchema.tagNames) || []), 'video', 'audio', 'source', 'track', 'abbr', 'mark'],
 }
 
 function extractCodeText(node) {
