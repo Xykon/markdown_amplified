@@ -18,6 +18,10 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     const isBack = sessionStorage.getItem(BACK_KEY) === '1'
     sessionStorage.removeItem(BACK_KEY)
 
+    // Consume the home-navigation flag set by the home button's onClick
+    const isHome = sessionStorage.getItem('md-nav-home') === '1'
+    sessionStorage.removeItem('md-nav-home')
+
     // Resolve a same-origin, different-page referrer, if any
     let ref = null
     try {
@@ -25,8 +29,8 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
       if (r && new URL(r).origin === window.location.origin && r !== current) ref = r
     } catch { /* ignore */ }
 
-    if (!ref) {
-      // Direct entry or same-page reload — start a fresh stack
+    if (isHome || !ref) {
+      // Home-button click or direct entry or same-page reload — start a fresh stack
       sessionStorage.setItem(STACK_KEY, JSON.stringify([current]))
       setBackUrl(null)
       return
@@ -99,6 +103,7 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               href={homeUrl}
               title="Home"
               aria-label="Go to home"
+              onClick={() => sessionStorage.setItem('md-nav-home', '1')}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" />
