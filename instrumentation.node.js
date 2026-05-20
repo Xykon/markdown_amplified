@@ -77,15 +77,22 @@ async function warmUpBatch(files, base, concurrency = 4) {
 }
 
 async function hitRoute(file, base) {
-  // Strip .md extension, collapse trailing /index to get the URL slug
-  const slug = file
-    .replace(/\.md$/, '')
-    .replace(/(^|\/)index$/, '')
-    .replace(/^\/+/, '')
+  // Directory indexes collapse to their parent path; all other files keep
+  // their .md extension so the [slug] handler reads the file directly
+  // instead of looking for <name>/index.md (which would 404).
+  let slug
+  if (file === 'index.md') {
+    slug = ''
+  } else if (file.endsWith('/index.md')) {
+    slug = file.slice(0, -'/index.md'.length)
+  } else {
+    slug = file  // e.g. "README.md" → "/README.md"
+  }
+  const url = slug ? `${base}/${slug}` : base
   try {
     const ac = new AbortController()
     const timer = setTimeout(() => ac.abort(), 20_000)
-    await fetch(`${base}/${slug}`, { signal: ac.signal })
+    await fetch(url, { signal: ac.signal })
     clearTimeout(timer)
   } catch {
     // 404, password gate, timeout — all fine; compilation still happened
