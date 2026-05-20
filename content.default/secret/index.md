@@ -11,6 +11,8 @@ Everything in this section demonstrates the layered security features. The four 
 | [secret.zip](secret.zip) | `secret` | Asset protected by the folder rule |
 | [password.zip](password.zip) | `password` | Asset with its own rule |
 
+Note: Assets protected with a password that has already been entered will download immediately.
+
 ---
 
 [← Back to examples](/examples.md)
