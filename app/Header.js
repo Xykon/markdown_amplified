@@ -22,6 +22,19 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     const isHome = sessionStorage.getItem('md-nav-home') === '1'
     sessionStorage.removeItem('md-nav-home')
 
+    // Detect browser reload — referrer is preserved across reloads so we must
+    // not treat it as a new navigation; just restore state from the existing stack.
+    const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload'
+    if (isReload) {
+      try {
+        const stack = JSON.parse(sessionStorage.getItem(STACK_KEY) || '[]')
+        setBackUrl(stack.length > 1 ? stack[stack.length - 2] : null)
+      } catch {
+        setBackUrl(null)
+      }
+      return
+    }
+
     // Resolve a same-origin, different-page referrer, if any
     let ref = null
     try {
@@ -30,7 +43,7 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     } catch { /* ignore */ }
 
     if (isHome || !ref) {
-      // Home-button click or direct entry or same-page reload — start a fresh stack
+      // Home-button click or direct entry — start a fresh stack
       sessionStorage.setItem(STACK_KEY, JSON.stringify([current]))
       setBackUrl(null)
       return
