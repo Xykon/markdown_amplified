@@ -357,6 +357,43 @@ Add a `cookies` block to `content-security.json`:
 
 Cookies are set with `SameSite=Strict` and, when the site is served over HTTPS, `Secure`. They are regular JavaScript-readable cookies (not `HttpOnly`) because unlock passwords must be accessible to the client-side AES decryption code.
 
+## Admin Interface
+
+The admin interface lives at `/admin` and lets you browse the active content tree, inspect per-file security flags, create folders, upload files, and delete files or folders. It uses the same content backend as the site itself, so what you can edit depends on whether the app is reading from S3 or from the local filesystem.
+
+### Configuration
+
+Enable and configure the admin interface in `content-security.json` with an `admin` block:
+
+```json
+{
+  "admin": {
+    "enabled": true,
+    "password": "change-me",
+    "readonly": false
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Set to `true` to turn on the admin login.
+| `password` | string | required | Password used to sign in to the admin interface.
+| `readonly` | boolean | `false` | When `true`, the admin UI is browse-only and all write actions are disabled.
+
+### What the admin UI can do
+
+- Browse the current content tree and open markdown files in a new tab.
+- View security markers such as password protection, date gating, and download flags.
+- Create folders, upload files, and delete files or folders when write access is available.
+- Show the current directory security settings for the selected folder.
+
+### Read-only behavior on Amplify without S3
+
+When the app is deployed on Amplify without `S3_BUCKET` configured, the admin interface is forced into read-only mode even if `content-security.json` sets `admin.readonly` to `false`. This is intentional: Amplify filesystem writes are not reliable for persistent content. You can still log in and browse the content tree, but upload, delete, and folder-creation actions are disabled.
+
+If you need persistent admin-managed content, use S3 mode instead.
+
 ## S3 Content Backend
 
 By default the site reads markdown files from the local `content/` directory (or `content.default/`). Setting the `S3_BUCKET` environment variable switches to an S3 backend — all file reads happen at request time from the specified bucket, with no local content needed in the deployed bundle.
@@ -458,7 +495,7 @@ The Amplify WEB_COMPUTE Lambda cannot resolve credentials from the standard AWS 
 2. Name it something like `markdown-amplified-s3`. Leave **Provide user access to the AWS Management Console** unchecked — this user only needs programmatic access.
 3. On the permissions step, choose **Attach policies directly → Create policy**. Switch to the **JSON** editor and paste one of the policies below depending on whether you want to use the admin interface.
 
-**Read-only access** (no admin interface, or admin interface in read-only mode):
+**Read-only access** (no admin interface, or admin interface in read-only mode; see [Admin Interface](#admin-interface)):
 
 ```json
 {
@@ -533,7 +570,9 @@ Amplify requires at least one global value for every variable; you cannot create
 | Branch | `S3_BUCKET` | Result |
 |--------|-------------|--------|
 | All branches | `my-bucket` | S3 mode (default for every branch) |
-| `dev` override | `null` | Filesystem mode for `dev` only |
+| `dev` override | `null` | Filesystem mode for `dev` only; admin is forced to read-only on Amplify |
+
+On Amplify, filesystem mode is treated as read-only for the admin interface even if `content-security.json` sets `admin.readonly` to `false`. Lambda-backed filesystem writes are not reliable there, so upload, delete, and folder-creation actions are intentionally disabled. See [Admin Interface](#admin-interface) for the full behavior.
 
 ### Security config in S3
 

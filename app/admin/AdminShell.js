@@ -659,7 +659,11 @@ export default function AdminShell({ cookieConfig }) {
     fetch('/api/admin/config', { headers: authHeaders() })
       .then(r => {
         if (r.status === 401) { clearToken(cookieConfig); setAuthed(false); return }
-        return r.json().then(d => { setStoredReadonly(d.readonly); setReadonly(d.readonly); setAuthed(true) })
+        return r.json().then(d => {
+          setStoredReadonly(d.readonly)
+          setReadonly(d.readonly)
+          setAuthed(true)
+        })
       })
       .catch(() => { setReadonly(getStoredReadonly()); setAuthed(true) })
   }, [])
