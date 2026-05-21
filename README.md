@@ -5,7 +5,7 @@ A server-rendered Next.js markdown viewer optimized for direct `.md` URLs and AW
 - Live preview: https://markdown-amplified.ehlers.tv
 - Public source repository: https://github.com/Xykon/markdown_amplified
 
-This project renders markdown documents from the `content/` directory with a fallback to `content.default/` when `content/` has no markdown files.
+This project renders markdown documents from Amazon S3 or the `content/` directory with a fallback to `content.default/` when `content/` has no markdown files.
 
 - GitHub-style syntax highlighting (light and dark)
 - KaTeX math support
@@ -29,7 +29,6 @@ This project renders markdown documents from the `content/` directory with a fal
 8. [Home Button](#home-button)
 9. [TOC Default](#toc-default)
 10. [S3 Content Backend](#s3-content-backend)
-11. [S3 Content Backend](#s3-content-backend)
 12. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
 13. [S3 Deployment Workflow](#s3-deployment-workflow)
 14. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
@@ -157,13 +156,13 @@ Individual files or entire directories can be protected with a password, restric
 
 ### Setup
 
-Copy the example file and edit it:
+For GitHub based content deployment, copy the example file and edit it:
 
 ```bash
 cp content-security.json.example content-security.json
 ```
 
-Then rebuild and redeploy the site.
+Then rebuild and redeploy the site. For S3 based setups, see [instructions below](#security-config-in-s3).
 
 ### Rule format
 

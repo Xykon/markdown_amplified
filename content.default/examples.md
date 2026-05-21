@@ -116,7 +116,7 @@ The admin is enabled and its password are set in `content-security.json`:
 
 ---
 
-## Downloading from the command line
+## Downloading password protected assets from the command line
 
 The browser-based gate uses **client-side** password verification (Web Crypto) and sets cookies via JavaScript — there is no server `Set-Cookie` header to capture. The actual file download goes directly to the `/api/asset-download/` endpoint, which accepts a JSON body with the password. No cookies are needed.
 
