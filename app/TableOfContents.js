@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function TableOfContents({ content, isOpen = true, onNavigate }) {
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
+  const linkRefs = useRef(new Map())
 
   useEffect(() => {
     // Walk the markdown line by line so we can skip fenced code blocks,
@@ -87,6 +88,15 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [headings])
 
+  useEffect(() => {
+    if (!isOpen || !activeId) return
+
+    const activeLink = linkRefs.current.get(activeId)
+    if (!activeLink) return
+
+    activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [activeId, isOpen])
+
   if (headings.length === 0) {
     return null
   }
@@ -105,6 +115,13 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
         {tocHeadings.map((heading) => (
           <li key={heading.id} className={`toc-item toc-level-${heading.level}`}>
             <a
+              ref={(node) => {
+                if (node) {
+                  linkRefs.current.set(heading.id, node)
+                } else {
+                  linkRefs.current.delete(heading.id)
+                }
+              }}
               href={`#${heading.id}`}
               className={`toc-link ${activeId === heading.id ? 'active' : ''}`}
               onClick={(e) => {
