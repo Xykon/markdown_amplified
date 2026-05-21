@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '../../../../lib/admin-auth.mjs'
 import { getContentProvider } from '../../../../lib/content-provider.mjs'
+import { loadSecurityRules, findRule, isWithinDateRange, isDownloadAllowed, loadRootSecurity } from '../../../../lib/security.mjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,30 @@ const BLOCKED_UPLOAD_EXTENSIONS = new Set([
   '.html', '.htm', '.xhtml', '.svg', '.xml', '.xsl',
 ])
 
-// GET /api/admin/files?path=<dir>  — list directory
+// Compute security flags for a single path against the loaded rules.
+// Returns null when no rule matches and no flags apply.
+function computeSecFlags(relPath, rules) {
+  const rule = findRule(relPath, rules)
+  if (!rule) return null
+  const out = {}
+  if (rule.password) out.password = true
+  if (rule.validFrom || rule.validUntil) {
+    out.dateGated = true
+    out.dateActive = isWithinDateRange(rule)
+  }
+  if (rule.download !== undefined) {
+    out.downloadExplicit = true
+    out.downloadAllowed = isDownloadAllowed(rule)
+  }
+  if (rule.toc !== undefined) out.toc = rule.toc
+  if (rule.name !== undefined) out.hasName = true
+  if (rule.home !== undefined) out.hasHome = true
+  if (rule.banner !== undefined || rule.bannerLight !== undefined ||
+      rule.bannerDark !== undefined || rule.homeIcon !== undefined) out.hasBanner = true
+  return Object.keys(out).length ? out : null
+}
+
+// GET /api/admin/files?path=<dir>  — list directory with security annotations
 export async function GET(request) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -26,8 +50,33 @@ export async function GET(request) {
 
   const provider = getContentProvider()
   try {
-    const listing = await provider.listDirectory(relPath)
-    return NextResponse.json(listing)
+    const [listing, rules, rootFlags] = await Promise.all([
+      provider.listDirectory(relPath),
+      loadSecurityRules(),
+      !relPath ? loadRootSecurity() : Promise.resolve(null),
+    ])
+
+    const dirs = listing.dirs.map(d => {
+      const dPath = relPath ? `${relPath}/${d.name}/` : `${d.name}/`
+      const sec = computeSecFlags(dPath, rules)
+      return sec ? { ...d, security: sec } : d
+    })
+
+    const files = listing.files.map(f => {
+      const fPath = relPath ? `${relPath}/${f.name}` : f.name
+      const sec = computeSecFlags(fPath, rules)
+      return sec ? { ...f, security: sec } : f
+    })
+
+    // Security for the current directory itself (shown as the root/folder row in the UI)
+    let currentSecurity = null
+    if (relPath) {
+      currentSecurity = computeSecFlags(relPath + '/', rules)
+    } else if (rootFlags && Object.keys(rootFlags).length) {
+      currentSecurity = rootFlags
+    }
+
+    return NextResponse.json({ dirs, files, currentSecurity })
   } catch (err) {
     console.error('admin list error:', err)
     return NextResponse.json({ error: 'list_failed' }, { status: 500 })

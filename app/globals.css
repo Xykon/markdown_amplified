@@ -1641,27 +1641,55 @@ html[data-theme='dark'] .security-gate-error {
   margin-top: 16px;
 }
 
-.admin-topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
+/* Utility rows (breadcrumb, action) — no borders, transparent bg, visually outside the table */
+.admin-util-row td {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  vertical-align: middle;
 }
 
-.admin-topbar-right {
+/* Separator below the top action row (mirrors the bottom's border-top) */
+.admin-util-row-sep-below td {
+  border-bottom: 2px solid var(--border);
+}
+
+/* Separator above the bottom tfoot util row */
+.admin-util-row-sep td {
+  border-top: 2px solid var(--border);
+}
+
+/* Content cell in a util row — left-aligned by default */
+.admin-util-cell {
+  text-align: left;
+}
+
+/* Breadcrumb row: breadcrumb on left, Sign out on right */
+.admin-util-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Actions container — flex row, right-aligned */
+.admin-util-actions {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-
-.admin-actions-inline {
-  display: flex;
-  gap: 8px;
   justify-content: flex-end;
-  flex-wrap: wrap;
+}
+
+/* Folder create form */
+.admin-folder-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-folder-form .admin-input-sm {
+  max-width: 240px;
+  flex: 1;
 }
 
 .admin-breadcrumb {
@@ -1852,17 +1880,6 @@ html[data-theme='dark'] .admin-btn-danger:hover {
   padding: 3px 8px;
 }
 
-.admin-new-folder-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.admin-new-folder-row .admin-input-sm {
-  max-width: 240px;
-  flex: 1;
-}
 
 .admin-error {
   color: #cf222e;
@@ -1920,6 +1937,7 @@ html[data-theme='dark'] .admin-status-bar {
   padding: 12px 0;
 }
 
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -1943,20 +1961,6 @@ html[data-theme='dark'] .admin-status-bar {
 
 .admin-table tbody tr:last-child td {
   border-bottom: none;
-}
-
-.admin-action-row td {
-  border-bottom: none;
-}
-
-.admin-action-row .admin-action-cell {
-  padding: 6px 8px;
-}
-
-.admin-table tfoot .admin-action-row td {
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  padding-bottom: 8px;
 }
 
 .admin-entry-name {
@@ -1995,4 +1999,56 @@ html[data-theme='dark'] .admin-status-bar {
   font-style: italic;
   text-align: center;
   padding: 24px;
+}
+
+/* ── Security indicator column ─────────────────────────────────────────────── */
+
+.admin-th-sec {
+  white-space: nowrap;
+}
+
+.admin-cell-sec {
+  width: 1px;
+  white-space: nowrap;
+  padding: 6px 4px;
+}
+
+.sec-strip {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.sec-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  opacity: 0.9;
+  cursor: default;
+}
+
+.sec-icon.sec-green { color: #2da44e; opacity: 1; }
+.sec-icon.sec-red   { color: #cf222e; opacity: 1; }
+.sec-icon.sec-muted { color: var(--muted); }
+
+html[data-theme='dark'] .sec-icon.sec-green { color: #3fb950; }
+html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
+
+@media (prefers-color-scheme: dark) {
+  .sec-icon.sec-green { color: #3fb950; }
+  .sec-icon.sec-red   { color: #ff7b72; }
+}
+
+/* Current-directory reference row (shown when it has security flags) */
+.admin-row-current-dir td {
+  border-bottom: 2px solid var(--border);
+  background: var(--surface-soft, rgba(127, 127, 127, 0.04));
+  color: var(--muted);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.admin-cur-dir-label {
+  font-family: inherit;
+  font-size: inherit;
 }

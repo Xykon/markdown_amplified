@@ -5,7 +5,7 @@ import { adminCookieName, readCookie, writeCookie, deleteCookie } from '../pw-co
 
 const TOKEN_KEY = 'admin-token'
 const READONLY_KEY = 'admin-readonly'
-const ACTIONS_REPEAT_THRESHOLD = 8  // show action bar below table too when this many items
+const ACTIONS_REPEAT_THRESHOLD = 8  // repeat action buttons in tfoot when list is long
 
 function getToken() {
   try { return sessionStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
@@ -43,6 +43,114 @@ function formatDate(iso) {
 function buildFileHref(currentPath, fileName) {
   const relPath = currentPath ? `${currentPath}/${fileName}` : fileName
   return fileName.toLowerCase().endsWith('.md') ? `/${relPath}` : `/asset/${relPath}`
+}
+
+// ── Security icon SVGs ────────────────────────────────────────────────────────
+
+function LockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="2.5" y="6.5" width="9" height="6.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M4.5 6.5V4a2.5 2.5 0 015 0v2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <circle cx="7" cy="9.5" r="1.1" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function ClockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M7 4v3.5l2.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M7 2v7M4.5 7l2.5 3 2.5-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2.5 12h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function NoTocIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2 4h10M2 7h7M2 10h9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M3 11L11 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function NameIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2.5 11L6.5 3l4 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M4 8.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function HomeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M1.5 7L7 1.5 12.5 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3 5.8V12h3V9.5h2V12h3V5.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function BannerIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="1.5" y="3" width="11" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+      <circle cx="4.5" cy="5.5" r="1" stroke="currentColor" strokeWidth="1"/>
+      <path d="M1.5 9l3-2.5 2.5 2.5 2-1.5 3.5 3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+
+function SecurityIcons({ sec }) {
+  if (!sec || Object.keys(sec).length === 0) return null
+  return (
+    <span className="sec-strip">
+      {sec.password && (
+        <span className="sec-icon" title="Password protected"><LockIcon /></span>
+      )}
+      {sec.dateGated && (
+        <span
+          className={`sec-icon ${sec.dateActive ? 'sec-green' : 'sec-red'}`}
+          title={sec.dateActive ? 'Date gated – currently accessible' : 'Date gated – currently restricted'}
+        >
+          <ClockIcon />
+        </span>
+      )}
+      {sec.downloadExplicit && (
+        <span
+          className={`sec-icon ${sec.downloadAllowed ? 'sec-green' : 'sec-red'}`}
+          title={sec.downloadAllowed ? 'Download allowed' : 'Download disabled'}
+        >
+          <DownloadIcon />
+        </span>
+      )}
+      {sec.toc === false && (
+        <span className="sec-icon sec-red" title="Table of contents disabled"><NoTocIcon /></span>
+      )}
+      {sec.hasName && (
+        <span className="sec-icon sec-muted" title="Custom title"><NameIcon /></span>
+      )}
+      {sec.hasHome && (
+        <span className="sec-icon sec-muted" title="Custom home"><HomeIcon /></span>
+      )}
+      {sec.hasBanner && (
+        <span className="sec-icon sec-muted" title="Custom banner / branding"><BannerIcon /></span>
+      )}
+    </span>
+  )
 }
 
 // ── Login form ──────────────────────────────────────────────────────────────
@@ -123,8 +231,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [error, setError]             = useState('')
   const [status, setStatus]           = useState('')
   const [newFolderName, setNewFolderName] = useState('')
-  const [showNewFolder, setShowNewFolder] = useState(false)
-  const [showNewFolderBottom, setShowNewFolderBottom] = useState(false)
+  const [showNewFolderWhere, setShowNewFolderWhere] = useState(null)  // null | 'top' | 'bottom'
   const [uploading, setUploading]     = useState(false)
   const [confirmDir, setConfirmDir]   = useState(null) // { name, fullPath, count, size }
   const [confirmName, setConfirmName] = useState('')
@@ -153,20 +260,17 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   useEffect(() => { load('') }, [load])
 
   function navigate(path) {
-    setShowNewFolder(false)
-    setShowNewFolderBottom(false)
+    setShowNewFolderWhere(null)
     load(path)
   }
 
-  function toggleNewFolder() {
-    setShowNewFolder(v => !v)
-    setShowNewFolderBottom(false)
+  function toggleNewFolderTop() {
+    setShowNewFolderWhere(v => v === 'top' ? null : 'top')
     setNewFolderName('')
   }
 
   function toggleNewFolderBottom() {
-    setShowNewFolderBottom(v => !v)
-    setShowNewFolder(false)
+    setShowNewFolderWhere(v => v === 'bottom' ? null : 'bottom')
     setNewFolderName('')
   }
 
@@ -304,8 +408,7 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Create folder failed'); return }
       setStatus(`Created folder "${name}"`)
       setNewFolderName('')
-      setShowNewFolder(false)
-      setShowNewFolderBottom(false)
+      setShowNewFolderWhere(null)
       load(currentPath)
     } catch {
       setError('Network error')
@@ -315,134 +418,162 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const totalItems = (listing?.dirs.length ?? 0) + (listing?.files.length ?? 0)
   const showBottomActions = !readonly && totalItems >= ACTIONS_REPEAT_THRESHOLD
 
+  // Column layout:
+  // colLeft  = Name + Security + Size  (form fits above these)
+  // colRight = Modified + Delete(rw only)  (action buttons sit above these)
+  const colLeft  = 3
+  const colRight = readonly ? 1 : 2
+  const colTotal = colLeft + colRight
+
   return (
     <div>
-      {/* Top bar: breadcrumb + sign out */}
-      <div className="admin-topbar">
-        <Breadcrumb path={currentPath} onNavigate={navigate} />
-        <div className="admin-topbar-right">
-          {readonly && <span className="admin-readonly-badge">Read-only</span>}
-          <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(cookieConfig); onLogout() }}>
-            Sign out
-          </button>
-        </div>
-      </div>
-
-      {/* New folder inline form */}
-      {!readonly && showNewFolder && (
-        <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
-          <input
-            type="text"
-            value={newFolderName}
-            onChange={e => setNewFolderName(e.target.value)}
-            placeholder="Folder name"
-            className="admin-input admin-input-sm"
-            autoFocus
-          />
-          <button type="submit" className="admin-btn admin-btn-primary">Create</button>
-          <button type="button" className="admin-btn" onClick={() => setShowNewFolder(false)}>Cancel</button>
-        </form>
-      )}
-
-      {error && <p className="admin-error admin-error-bar">{error}</p>}
-      {status && <p className="admin-status-bar">{status}</p>}
-
-      {loading && <p className="admin-loading">Loading…</p>}
-
-      {!loading && listing && (
-        <table className="admin-table">
-          <thead>
-            {!readonly && (
-              <tr className="admin-action-row">
-                <td colSpan={2} />
-                <td colSpan={2} className="admin-action-cell">
-                  <div className="admin-actions-inline">
-                    <button className="admin-btn" onClick={toggleNewFolder}>New folder</button>
+      <table className="admin-table">
+        <thead>
+          {/* Row 1: breadcrumb (left) + Sign out (right, same cell) */}
+          <tr className="admin-util-row">
+            <td colSpan={colTotal} className="admin-util-cell">
+              <div className="admin-util-topbar">
+                <Breadcrumb path={currentPath} onNavigate={navigate} />
+                <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(cookieConfig); onLogout() }}>
+                  Sign out
+                </button>
+              </div>
+              {error && <p className="admin-error admin-error-bar">{error}</p>}
+              {status && <p className="admin-status-bar">{status}</p>}
+            </td>
+          </tr>
+          {/* Row 2: folder form (above Name/Security/Size) + action buttons (above Modified/Delete) */}
+          <tr className="admin-util-row admin-util-row-sep-below">
+            <td colSpan={colLeft} className="admin-util-cell">
+              {!readonly && showNewFolderWhere === 'top' && (
+                <form className="admin-folder-form" onSubmit={handleCreateFolder}>
+                  <input
+                    type="text"
+                    value={newFolderName}
+                    onChange={e => setNewFolderName(e.target.value)}
+                    placeholder="Folder name"
+                    className="admin-input admin-input-sm"
+                    autoFocus
+                  />
+                  <button type="submit" className="admin-btn admin-btn-primary">Create</button>
+                  <button type="button" className="admin-btn" onClick={() => setShowNewFolderWhere(null)}>Cancel</button>
+                </form>
+              )}
+            </td>
+            <td colSpan={colRight} className="admin-util-cell">
+              {readonly
+                ? <div className="admin-util-actions"><span className="admin-readonly-badge">Read-only</span></div>
+                : (
+                  <div className="admin-util-actions">
+                    <button className="admin-btn" onClick={toggleNewFolderTop}>New folder</button>
                     <label className="admin-btn" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
                       {uploading ? 'Uploading…' : 'Upload files'}
                       <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
                     </label>
                   </div>
-                </td>
-              </tr>
-            )}
-            <tr>
-              <th>Name</th>
-              <th>Size</th>
-              <th>Modified</th>
-              {!readonly && <th></th>}
-            </tr>
-          </thead>
-          <tbody>
-            {totalItems === 0 && (
-              <tr><td colSpan={readonly ? 3 : 4} className="admin-empty">Empty folder</td></tr>
-            )}
-            {listing.dirs.map(d => (
-              <tr key={`d:${d.name}`} className="admin-row-dir">
-                <td>
-                  <button className="admin-entry-name admin-dir-link" onClick={() => navigate(currentPath ? `${currentPath}/${d.name}` : d.name)}>
-                    📁 <span className="admin-entry-text">{d.name}</span>
-                  </button>
-                </td>
-                <td className="admin-cell-meta">{formatSize(d.size)}</td>
-                <td className="admin-cell-meta">{formatDate(d.lastModified)}</td>
-                {!readonly && (
-                  <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteDir(d.name)}>Delete</button></td>
-                )}
-              </tr>
-            ))}
-            {listing.files.map(f => {
-              const isProtected = !currentPath && f.name === 'content-security.json'
-              return (
-              <tr key={`f:${f.name}`}>
-                <td>{f.name === 'content-security.json'
-                  ? <span className="admin-entry-name">📄 <span className="admin-entry-text">{f.name}</span></span>
-                  : <span className="admin-entry-name">📄 <a className="admin-file-link" href={buildFileHref(currentPath, f.name)} target="_blank" rel="noreferrer"><span className="admin-entry-text">{f.name}</span></a></span>
-                }</td>
-                <td className="admin-cell-meta">{formatSize(f.size)}</td>
-                <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
-                {!readonly && (
-                  <td>{isProtected
-                    ? <span className="admin-protected-label" title="Deleting this file would disable admin auth and all access rules.">🔒</span>
-                    : <button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button>
-                  }</td>
-                )}
-              </tr>
-              )
-            })}
-          </tbody>
-          {showBottomActions && (
-            <tfoot>
-              <tr className="admin-action-row">
-                <td colSpan={2} />
-                <td colSpan={2} className="admin-action-cell">
-                  <div className="admin-actions-inline">
-                    <button className="admin-btn" onClick={toggleNewFolderBottom}>New folder</button>
-                    <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                      {uploading ? 'Uploading…' : 'Upload files'}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
+                )
+              }
+            </td>
+          </tr>
+          {/* Column headers */}
+          <tr>
+            <th>Name</th>
+            <th className="admin-th-sec">Security</th>
+            <th>Size</th>
+            <th>Modified</th>
+            {!readonly && <th></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr><td colSpan={colTotal} className="admin-loading">Loading…</td></tr>
           )}
-        </table>
-      )}
-
-      {!readonly && showNewFolderBottom && (
-        <form className="admin-new-folder-row" onSubmit={handleCreateFolder}>
-          <input
-            type="text"
-            value={newFolderName}
-            onChange={e => setNewFolderName(e.target.value)}
-            placeholder="Folder name"
-            className="admin-input admin-input-sm"
-            autoFocus
-          />
-          <button type="submit" className="admin-btn admin-btn-primary">Create</button>
-          <button type="button" className="admin-btn" onClick={() => setShowNewFolderBottom(false)}>Cancel</button>
-        </form>
-      )}
+          {!loading && listing && (
+            <>
+              {listing.currentSecurity && (
+                <tr className="admin-row-current-dir">
+                  <td>
+                    <span className="admin-entry-name admin-cur-dir-label">
+                      {currentPath ? `📁 ${currentPath.split('/').pop()}/` : '📁 /'}
+                    </span>
+                  </td>
+                  <td className="admin-cell-sec"><SecurityIcons sec={listing.currentSecurity} /></td>
+                  <td className="admin-cell-meta" colSpan={2} />
+                  {!readonly && <td />}
+                </tr>
+              )}
+              {totalItems === 0 && (
+                <tr><td colSpan={colTotal} className="admin-empty">Empty folder</td></tr>
+              )}
+              {listing.dirs.map(d => (
+                <tr key={`d:${d.name}`} className="admin-row-dir">
+                  <td>
+                    <button className="admin-entry-name admin-dir-link" onClick={() => navigate(currentPath ? `${currentPath}/${d.name}` : d.name)}>
+                      📁 <span className="admin-entry-text">{d.name}</span>
+                    </button>
+                  </td>
+                  <td className="admin-cell-sec"><SecurityIcons sec={d.security} /></td>
+                  <td className="admin-cell-meta">{formatSize(d.size)}</td>
+                  <td className="admin-cell-meta">{formatDate(d.lastModified)}</td>
+                  {!readonly && (
+                    <td><button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteDir(d.name)}>Delete</button></td>
+                  )}
+                </tr>
+              ))}
+              {listing.files.map(f => {
+                const isProtected = !currentPath && f.name === 'content-security.json'
+                return (
+                  <tr key={`f:${f.name}`}>
+                    <td>{f.name === 'content-security.json'
+                      ? <span className="admin-entry-name">📄 <span className="admin-entry-text">{f.name}</span></span>
+                      : <span className="admin-entry-name">📄 <a className="admin-file-link" href={buildFileHref(currentPath, f.name)} target="_blank" rel="noreferrer"><span className="admin-entry-text">{f.name}</span></a></span>
+                    }</td>
+                    <td className="admin-cell-sec"><SecurityIcons sec={f.security} /></td>
+                    <td className="admin-cell-meta">{formatSize(f.size)}</td>
+                    <td className="admin-cell-meta">{formatDate(f.lastModified)}</td>
+                    {!readonly && (
+                      <td>{isProtected
+                        ? <span className="admin-protected-label" title="Deleting this file would disable admin auth and all access rules.">🔒</span>
+                        : <button className="admin-btn admin-btn-danger admin-btn-table" onClick={() => handleDeleteFile(f.name)}>Delete</button>
+                      }</td>
+                    )}
+                  </tr>
+                )
+              })}
+            </>
+          )}
+        </tbody>
+        {showBottomActions && (
+          <tfoot>
+            <tr className="admin-util-row admin-util-row-sep">
+              <td colSpan={colLeft} className="admin-util-cell">
+                {showNewFolderWhere === 'bottom' && (
+                  <form className="admin-folder-form" onSubmit={handleCreateFolder}>
+                    <input
+                      type="text"
+                      value={newFolderName}
+                      onChange={e => setNewFolderName(e.target.value)}
+                      placeholder="Folder name"
+                      className="admin-input admin-input-sm"
+                      autoFocus
+                    />
+                    <button type="submit" className="admin-btn admin-btn-primary">Create</button>
+                    <button type="button" className="admin-btn" onClick={() => setShowNewFolderWhere(null)}>Cancel</button>
+                  </form>
+                )}
+              </td>
+              <td colSpan={colRight} className="admin-util-cell">
+                <div className="admin-util-actions">
+                  <button className="admin-btn" onClick={toggleNewFolderBottom}>New folder</button>
+                  <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                    {uploading ? 'Uploading…' : 'Upload files'}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
 
       {confirmDir && (
         <DeleteFolderModal
