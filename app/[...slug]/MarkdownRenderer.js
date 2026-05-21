@@ -174,6 +174,14 @@ function scrollToHashTarget({ smooth = true } = {}) {
   window.scrollTo({ top, behavior })
 }
 
+function isMarkdownHref(href) {
+  if (typeof href !== 'string') {
+    return false
+  }
+
+  return href.split('#', 1)[0].split('?', 1)[0].toLowerCase().endsWith('.md')
+}
+
 function MermaidBlock({ chart }) {
   const OVERLAY_ZOOM_STEP = 0.25
   const OVERLAY_ZOOM_MIN = 0.75
@@ -648,7 +656,7 @@ export default function MarkdownRenderer({ content, slug, cookieConfig }) {
           let resolved = href
           if (href && !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(href)) {
             const base = assetBase ? `${assetBase}/` : ''
-            resolved = href.endsWith('.md')
+            resolved = isMarkdownHref(href)
               ? `/${base}${href}`
               : `/asset/${base}${href}`
           }
