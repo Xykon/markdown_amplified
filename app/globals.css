@@ -2087,3 +2087,238 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   font-family: inherit;
   font-size: inherit;
 }
+
+/* ── Admin tab bar ─────────────────────────────────────────────────────────── */
+
+.admin-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+  padding-bottom: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.admin-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-tab:hover {
+  color: var(--text);
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.admin-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+/* ── Admin settings form ───────────────────────────────────────────────────── */
+
+.admin-settings-form {
+  max-width: 860px;
+}
+
+.admin-settings-section {
+  margin-bottom: 28px;
+}
+
+.admin-settings-section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.admin-settings-row .admin-field {
+  flex: 1;
+  min-width: 160px;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-field-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.admin-field-help {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.admin-checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.admin-settings-actions {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Admin security editor ─────────────────────────────────────────────────── */
+
+.admin-sec-match-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.admin-sec-caret {
+  font-size: 0.6rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.admin-sec-match {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125em;
+}
+
+.admin-sec-row-expanded td {
+  background: rgba(127, 127, 127, 0.05);
+  border-bottom: none;
+}
+
+.admin-sec-edit-row td {
+  padding: 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.admin-sec-edit-cell {
+  padding: 14px 12px !important;
+}
+
+.admin-sec-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-sec-edit-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.admin-sec-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.admin-sec-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-sec-date-row .admin-sec-edit-group {
+  flex: 0 1 200px;
+}
+
+.admin-sec-match-preview {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125em;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.admin-sec-type-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-sec-add-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.admin-sec-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.admin-sec-subtitle {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+/* tfoot add-rule row */
+.admin-sec-add-row td {
+  padding: 14px 12px;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}

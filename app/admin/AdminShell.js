@@ -2,17 +2,13 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { adminCookieName, readCookie, writeCookie, deleteCookie } from '../pw-cookie'
+import { TOKEN_KEY, getToken, setToken, authHeaders } from './adminApi'
+import AdminSettings from './AdminSettings'
+import AdminSecurity from './AdminSecurity'
 
-const TOKEN_KEY = 'admin-token'
 const READONLY_KEY = 'admin-readonly'
-const ACTIONS_REPEAT_THRESHOLD = 8  // repeat action buttons in tfoot when list is long
+const ACTIONS_REPEAT_THRESHOLD = 8
 
-function getToken() {
-  try { return sessionStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
-}
-function setToken(t) {
-  try { sessionStorage.setItem(TOKEN_KEY, t) } catch { }
-}
 function clearToken(cookieConfig) {
   try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(READONLY_KEY) } catch { }
   if (cookieConfig) deleteCookie(adminCookieName(cookieConfig.prefix), cookieConfig)
@@ -22,10 +18,6 @@ function getStoredReadonly() {
 }
 function setStoredReadonly(v) {
   try { sessionStorage.setItem(READONLY_KEY, v ? 'true' : 'false') } catch { }
-}
-
-function authHeaders(extra = {}) {
-  return { Authorization: `Bearer ${getToken()}`, ...extra }
 }
 
 function formatSize(bytes) {
@@ -113,7 +105,6 @@ function BannerIcon() {
   )
 }
 
-
 function SecurityIcons({ sec }) {
   if (!sec || Object.keys(sec).length === 0) return null
   return (
@@ -153,7 +144,7 @@ function SecurityIcons({ sec }) {
   )
 }
 
-// ── Login form ──────────────────────────────────────────────────────────────
+// ── Login form ────────────────────────────────────────────────────────────────
 
 function LoginForm({ onLogin }) {
   const [password, setPassword] = useState('')
@@ -202,7 +193,7 @@ function LoginForm({ onLogin }) {
   )
 }
 
-// ── Breadcrumb ───────────────────────────────────────────────────────────────
+// ── Breadcrumb ────────────────────────────────────────────────────────────────
 
 function Breadcrumb({ path, onNavigate }) {
   const parts = path ? path.split('/').filter(Boolean) : []
@@ -222,7 +213,7 @@ function Breadcrumb({ path, onNavigate }) {
   )
 }
 
-// ── File browser ─────────────────────────────────────────────────────────────
+// ── File browser ──────────────────────────────────────────────────────────────
 
 function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [currentPath, setCurrentPath] = useState('')
@@ -231,9 +222,9 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const [error, setError]             = useState('')
   const [status, setStatus]           = useState('')
   const [newFolderName, setNewFolderName] = useState('')
-  const [showNewFolderWhere, setShowNewFolderWhere] = useState(null)  // null | 'top' | 'bottom'
+  const [showNewFolderWhere, setShowNewFolderWhere] = useState(null)
   const [uploading, setUploading]     = useState(false)
-  const [confirmDir, setConfirmDir]   = useState(null) // { name, fullPath, count, size }
+  const [confirmDir, setConfirmDir]   = useState(null)
   const [confirmName, setConfirmName] = useState('')
   const [deleting, setDeleting]       = useState(false)
   const fileInputRef = useRef(null)
@@ -293,9 +284,6 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
     }
   }
 
-  // Try a non-recursive folder delete. If empty, the server removes any
-  // directory marker and we refresh. If non-empty, the server returns 409
-  // with { count, size } — open the confirmation modal.
   async function handleDeleteDir(name) {
     const fullPath = currentPath ? `${currentPath}/${name}` : name
     setStatus('')
@@ -418,9 +406,6 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   const totalItems = (listing?.dirs.length ?? 0) + (listing?.files.length ?? 0)
   const showBottomActions = !readonly && totalItems >= ACTIONS_REPEAT_THRESHOLD
 
-  // Column layout:
-  // colLeft  = Name + Security + Size  (form fits above these)
-  // colRight = Modified + Delete(rw only)  (action buttons sit above these)
   const colLeft  = 3
   const colRight = readonly ? 1 : 2
   const colTotal = colLeft + colRight
@@ -429,22 +414,14 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
     <div>
       <table className="admin-table">
         <thead>
-          {/* Row 1: breadcrumb (left) + Sign out (right, same cell) */}
-          <tr className="admin-util-row">
-            <td colSpan={colTotal} className="admin-util-cell">
+          {/* Row 1: breadcrumb + folder form (left) + action buttons (right) */}
+          <tr className="admin-util-row admin-util-row-sep-below">
+            <td colSpan={colLeft} className="admin-util-cell">
               <div className="admin-util-topbar">
                 <Breadcrumb path={currentPath} onNavigate={navigate} />
-                <button className="admin-btn admin-btn-danger" onClick={() => { clearToken(cookieConfig); onLogout() }}>
-                  Sign out
-                </button>
               </div>
               {error && <p className="admin-error admin-error-bar">{error}</p>}
               {status && <p className="admin-status-bar">{status}</p>}
-            </td>
-          </tr>
-          {/* Row 2: folder form (above Name/Security/Size) + action buttons (above Modified/Delete) */}
-          <tr className="admin-util-row admin-util-row-sep-below">
-            <td colSpan={colLeft} className="admin-util-cell">
               {!readonly && showNewFolderWhere === 'top' && (
                 <form className="admin-folder-form" onSubmit={handleCreateFolder}>
                   <input
@@ -461,21 +438,18 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
               )}
             </td>
             <td colSpan={colRight} className="admin-util-cell">
-              {readonly
-                ? <div className="admin-util-actions"><span className="admin-readonly-badge">Read-only</span></div>
-                : (
-                  <div className="admin-util-actions">
-                    <button className="admin-btn" onClick={toggleNewFolderTop}>New folder</button>
-                    <label className="admin-btn" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-                      {uploading ? 'Uploading…' : 'Upload files'}
-                      <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-                    </label>
-                  </div>
-                )
-              }
+              {!readonly && (
+                <div className="admin-util-actions">
+                  <button className="admin-btn" onClick={toggleNewFolderTop}>New folder</button>
+                  <label className="admin-btn" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
+                    {uploading ? 'Uploading…' : 'Upload files'}
+                    <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+                  </label>
+                </div>
+              )}
             </td>
           </tr>
-          {/* Column headers */}
+          {/* Row 2: column headers */}
           <tr>
             <th>Name</th>
             <th className="admin-th-sec">Security</th>
@@ -589,10 +563,10 @@ function FileBrowser({ onLogout, readonly, cookieConfig }) {
   )
 }
 
-// ── Folder delete confirmation modal ─────────────────────────────────────────
+// ── Folder delete confirmation modal ──────────────────────────────────────────
 
 const DELETE_TYPED_NAME_THRESHOLD_ITEMS = 50
-const DELETE_TYPED_NAME_THRESHOLD_BYTES = 50 * 1024 * 1024 // 50 MB
+const DELETE_TYPED_NAME_THRESHOLD_BYTES = 50 * 1024 * 1024
 
 function DeleteFolderModal({ info, typedName, onTypedNameChange, onCancel, onConfirm, busy }) {
   const requiresTyped =
@@ -611,7 +585,7 @@ function DeleteFolderModal({ info, typedName, onTypedNameChange, onCancel, onCon
   return (
     <div className="admin-modal-backdrop" onClick={() => !busy && onCancel()}>
       <div className="admin-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3 className="admin-modal-title">Delete folder “{info.name}”?</h3>
+        <h3 className="admin-modal-title">Delete folder "{info.name}"?</h3>
         <div className="admin-modal-body">
           <p>
             This folder contains <strong>{info.count}</strong> item{info.count === 1 ? '' : 's'} totaling <strong>{formatSize(info.size)}</strong>.
@@ -642,14 +616,14 @@ function DeleteFolderModal({ info, typedName, onTypedNameChange, onCancel, onCon
   )
 }
 
-// ── Root shell ───────────────────────────────────────────────────────────────
+// ── Root shell ────────────────────────────────────────────────────────────────
 
 export default function AdminShell({ cookieConfig }) {
   const [authed, setAuthed]     = useState(null)
   const [readonly, setReadonly] = useState(false)
+  const [tab, setTab]           = useState('files')
 
   useEffect(() => {
-    // Check sessionStorage first, then cookie
     let token = getToken()
     if (!token && cookieConfig) {
       token = readCookie(adminCookieName(cookieConfig.prefix)) || ''
@@ -683,5 +657,21 @@ export default function AdminShell({ cookieConfig }) {
 
   if (authed === null) return null
   if (!authed) return <LoginForm onLogin={handleLogin} />
-  return <FileBrowser onLogout={handleLogout} readonly={readonly} cookieConfig={cookieConfig} />
+
+  return (
+    <div>
+      <div className="admin-tab-bar">
+        <div className="admin-tabs">
+          <button className={`admin-tab${tab === 'settings' ? ' active' : ''}`} onClick={() => setTab('settings')}>Settings</button>
+          <button className={`admin-tab${tab === 'files' ? ' active' : ''}`} onClick={() => setTab('files')}>Files</button>
+          <button className={`admin-tab${tab === 'security' ? ' active' : ''}`} onClick={() => setTab('security')}>Security</button>
+        </div>
+        {readonly && <span className="admin-readonly-badge">Read-only</span>}
+        <button className="admin-btn admin-btn-danger" onClick={handleLogout}>Sign out</button>
+      </div>
+      {tab === 'settings' && <AdminSettings readonly={readonly} onLogout={handleLogout} />}
+      {tab === 'files'    && <FileBrowser readonly={readonly} onLogout={handleLogout} cookieConfig={cookieConfig} />}
+      {tab === 'security' && <AdminSecurity readonly={readonly} onLogout={handleLogout} />}
+    </div>
+  )
 }
