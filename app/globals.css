@@ -125,7 +125,7 @@ body {
   padding: 12px 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
 }
 
 .header-left {
@@ -141,10 +141,25 @@ body {
   margin: 0;
 }
 
+.header-banner {
+  display: block;
+  max-height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
 .header-buttons {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-left: auto;
+}
+
+.header-site-btn-icon {
+  display: block;
+  max-height: 24px;
+  width: auto;
+  object-fit: contain;
 }
 
 .header-button {
@@ -414,6 +429,10 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .header-banner {
+    max-height: 26px;
   }
 
   .header-buttons {

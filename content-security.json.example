@@ -1,6 +1,21 @@
 {
-  "comment": "Optional site name shown in the header. Defaults to 'Markdown Amplified' if omitted.",
-  "name": "Markdown Amplified",
+  "comment": "Optional site name shown in the header. Defaults to 'Markdown Amplified' if omitted. Used as alt text when a banner image is set.",
+  "name": "My Site",
+  "comment_banner": "Optional banner image shown in the header instead of the name text. Path is relative to the content root (served via /asset/). Falls back to name text if the image fails to load.",
+  "banner": "banner.png",
+  "comment_banner_themes": "Optional light/dark-mode-specific banners. Each overrides 'banner' for its theme. 'banner' remains the fallback for whichever variant is not set.",
+  "bannerLight": "banner-light.png",
+  "bannerDark": "banner-dark.png",
+  "comment_site_button": "Optional custom button in the header with an icon and optional link. Icon paths are relative to the content root (served via /asset/). Use iconLight/iconDark for theme-specific variants. placement: 'left' (before home button) or 'right' (after theme toggle). alignment: 'left' (adjacent to existing buttons), 'center' (same), or 'right' (at the screen edge). url is optional; omit for a non-clickable logo.",
+  "siteButton": {
+    "icon": "company-logo.svg",
+    "iconLight": "company-logo-light.svg",
+    "iconDark": "company-logo-dark.svg",
+    "url": "https://www.example.com",
+    "placement": "right",
+    "alignment": "right",
+    "alt": "My Company"
+  },
   "comment1": "Global home button default. The home button is enabled by default and links to the site root (/). Set 'home' here to change the default for all pages: 'site' (links to /), 'folder' (links to the top-level folder of the current file), any URL string (custom link), or false (disabled).",
   "home": "site",
   "comment2": "Global TOC default. The TOC opens by default on desktop. Set 'toc' to false to start it closed on all pages.",
@@ -79,6 +94,18 @@
       "comment": "TOC: start closed for an entire section",
       "match": "landing/",
       "toc": false
+    },
+    {
+      "comment": "Site name/banner: use a different header title for a whole section",
+      "match": "docs/",
+      "name": "Documentation"
+    },
+    {
+      "comment": "Site name/banner: show a section-specific banner image (falls back to name if image fails)",
+      "match": "products/",
+      "name": "Products",
+      "banner": "products/header-logo.png",
+      "bannerDark": "products/header-logo-dark.png"
     }
   ]
 }

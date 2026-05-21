@@ -545,7 +545,7 @@ Upload `content-security.json` to the root of your bucket (or `<S3_PREFIX>conten
 2. In AWS Amplify Console, create a new app and connect the repo.
 3. Keep `amplify.yml` and `customHttp.yml` in the repo root so Amplify uses
    the project build settings and custom HTTP headers.
-4. **Set the app platform to `WEB_COMPUTE` (SSR), not `WEB` (static hosting).**
+4. **If deployment fails, check that the app platform is set to `WEB_COMPUTE` (SSR), not `WEB` (static hosting).**
    Because this is a Next.js SSR project, Amplify must be told to treat it as
    a compute app rather than a static site. You can check and set it via the
    AWS CLI:
@@ -555,7 +555,7 @@ Upload `content-security.json` to the root of your bucket (or `<S3_PREFIX>conten
    aws amplify update-app --app-id <APP_ID> --platform WEB_COMPUTE
    ```
 
-   Then redeploy.
+   Then redeploy. If you deploy this in a new application, this should be set automatically.
 5. Every subsequent push triggers a fresh SSR build and deployment.
 
 ## S3 Deployment Workflow

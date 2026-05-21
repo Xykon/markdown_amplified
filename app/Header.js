@@ -5,9 +5,33 @@ import { ThemeContext } from './ThemeContext'
 
 const SOURCE_REPO_URL = 'https://github.com/Xykon/markdown_amplified'
 
-export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName }) {
+function SiteButtonEl({ siteButton, theme }) {
+  const activeIcon = (theme?.isDark && siteButton.iconDark) ? siteButton.iconDark
+    : (!theme?.isDark && siteButton.iconLight) ? siteButton.iconLight
+    : siteButton.icon
+  if (!activeIcon) return null
+  const img = <img src={`/asset/${activeIcon}`} alt={siteButton.alt ?? ''} className="header-site-btn-icon" />
+  if (siteButton.url) {
+    return (
+      <a href={siteButton.url} className="header-button" target="_blank" rel="noopener noreferrer" aria-label={siteButton.alt ?? 'Site link'}>
+        {img}
+      </a>
+    )
+  }
+  return <span className="header-button">{img}</span>
+}
+
+export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
+  const [bannerError, setBannerError] = useState(false)
+
+  const activeBanner = (theme?.isDark && siteBannerDark)  ? siteBannerDark
+    : (!theme?.isDark && siteBannerLight) ? siteBannerLight
+    : siteBanner
+
+  // Reset banner error whenever the active banner src changes (theme switch or navigation)
+  useEffect(() => { setBannerError(false) }, [activeBanner])
 
   useEffect(() => {
     const STACK_KEY = 'md-nav-stack'
@@ -106,10 +130,16 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
     a.remove()
   }
 
+  const sbPlacement = siteButton?.placement ?? 'right'
+  const sbAlignment = siteButton?.alignment ?? 'right'
+  const siteBtn = siteButton ? <SiteButtonEl siteButton={siteButton} theme={theme} /> : null
+
   return (
     <header className="app-header">
       <div className="header-content">
+        {siteBtn && sbPlacement === 'left' && sbAlignment !== 'right' && siteBtn}
         <div className="header-left">
+          {siteBtn && sbPlacement === 'left' && sbAlignment === 'right' && siteBtn}
           {homeUrl && (
             <a
               className="header-button home-button"
@@ -157,7 +187,18 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               </svg>
             </button>
           )}
-          <h1 className="header-title">{siteName ?? 'Markdown Amplified'}</h1>
+          <h1 className="header-title">
+            {activeBanner && !bannerError ? (
+              <img
+                src={`/asset/${activeBanner}`}
+                alt={siteName ?? 'Markdown Amplified'}
+                className="header-banner"
+                onError={() => setBannerError(true)}
+              />
+            ) : (
+              siteName ?? 'Markdown Amplified'
+            )}
+          </h1>
         </div>
         <div className="header-buttons">
           {slug && (
@@ -211,7 +252,9 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               </svg>
             )}
           </button>
+          {siteBtn && sbPlacement === 'right' && sbAlignment !== 'right' && siteBtn}
         </div>
+        {siteBtn && sbPlacement === 'right' && sbAlignment === 'right' && siteBtn}
       </div>
     </header>
   )

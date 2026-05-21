@@ -37,7 +37,7 @@ function computeSecFlags(relPath, rules) {
   if (rule.name !== undefined) out.hasName = true
   if (rule.home !== undefined) out.hasHome = true
   if (rule.banner !== undefined || rule.bannerLight !== undefined ||
-      rule.bannerDark !== undefined || rule.homeIcon !== undefined) out.hasBanner = true
+      rule.bannerDark !== undefined) out.hasBanner = true
   return Object.keys(out).length ? out : null
 }
 

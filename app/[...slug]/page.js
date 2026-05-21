@@ -40,10 +40,9 @@ export default async function MarkdownPage({ params }) {
 
   const [rules, globalHome, globalToc, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadCookieConfig(), loadGlobalSiteHeader()])
   const rule = findRule(relativeFile, rules)
-  const siteHeader = findSiteHeader(relativeFile, rules, globalSiteHeader)
-  const siteName = siteHeader.name ?? 'Markdown Amplified'
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
+  const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(relativeFile, rules, globalSiteHeader)
 
   if (rule && !isWithinDateRange(rule)) notFound()
 
@@ -73,6 +72,10 @@ export default async function MarkdownPage({ params }) {
       tocOpen={tocOpen}
       cookieConfig={cookieConfig ?? undefined}
       siteName={siteName}
+      siteBanner={siteBanner ?? undefined}
+      siteBannerLight={siteBannerLight ?? undefined}
+      siteBannerDark={siteBannerDark ?? undefined}
+      siteButton={siteButton ?? undefined}
     />
   )
 }

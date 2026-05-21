@@ -31,7 +31,7 @@ export default async function GatePage({ params }) {
   const withinDateRange = isWithinDateRange(rule)
   const filename = path.posix.basename(relPath)
   const homeUrl = findHomeUrl(relPath, rules, globalHome)
-  const siteName = findSiteHeader(relPath, rules, globalSiteHeader).name ?? 'Markdown Amplified'
+  const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(relPath, rules, globalSiteHeader)
 
   const encrypted = withinDateRange ? await encryptContent(relPath, rule.password) : null
 
@@ -45,6 +45,10 @@ export default async function GatePage({ params }) {
       homeUrl={homeUrl ?? undefined}
       cookieConfig={cookieConfig ?? undefined}
       siteName={siteName}
+      siteBanner={siteBanner ?? undefined}
+      siteBannerLight={siteBannerLight ?? undefined}
+      siteBannerDark={siteBannerDark ?? undefined}
+      siteButton={siteButton ?? undefined}
     />
   )
 }
