@@ -137,8 +137,8 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
   return (
     <header className="app-header">
       <div className="header-content">
-        {siteBtn && sbPlacement === 'left' && sbAlignment !== 'right' && siteBtn}
         <div className="header-left">
+          {siteBtn && sbPlacement === 'left' && sbAlignment !== 'right' && siteBtn}
           {siteBtn && sbPlacement === 'left' && sbAlignment === 'right' && siteBtn}
           {homeUrl && (
             <a
@@ -187,6 +187,8 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
               </svg>
             </button>
           )}
+        </div>
+        <div className="header-center">
           <h1 className="header-title">
             {activeBanner && !bannerError ? (
               <img
