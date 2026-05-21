@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadSiteName, loadCookieConfig, findRule, findHomeUrl, findTocOpen, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -38,8 +38,10 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : path.posix.join(requested, 'index.md')
 
-  const [rules, globalHome, globalToc, cookieConfig, siteName] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadCookieConfig(), loadSiteName()])
+  const [rules, globalHome, globalToc, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadCookieConfig(), loadGlobalSiteHeader()])
   const rule = findRule(relativeFile, rules)
+  const siteHeader = findSiteHeader(relativeFile, rules, globalSiteHeader)
+  const siteName = siteHeader.name ?? 'Markdown Amplified'
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
 

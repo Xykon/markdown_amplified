@@ -1,7 +1,7 @@
 import path from 'path'
 import { notFound } from 'next/navigation'
 import AssetGate from './AssetGate'
-import { loadSecurityRules, loadGlobalHome, loadSiteName, loadCookieConfig, findRule, findHomeUrl, isWithinDateRange, encryptContent } from '../../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findSiteHeader, isWithinDateRange, encryptContent } from '../../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((s) => { try { return decodeURIComponent(s) } catch { return s } })
@@ -22,7 +22,7 @@ export default async function GatePage({ params }) {
 
   if (relPath.endsWith('.md') || relPath === 'content-security.json') notFound()
 
-  const [rules, globalHome, cookieConfig, siteName] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadCookieConfig(), loadSiteName()])
+  const [rules, globalHome, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadCookieConfig(), loadGlobalSiteHeader()])
   const rule = findRule(relPath, rules)
 
   // Gate only exists for password-protected files
@@ -31,6 +31,7 @@ export default async function GatePage({ params }) {
   const withinDateRange = isWithinDateRange(rule)
   const filename = path.posix.basename(relPath)
   const homeUrl = findHomeUrl(relPath, rules, globalHome)
+  const siteName = findSiteHeader(relPath, rules, globalSiteHeader).name ?? 'Markdown Amplified'
 
   const encrypted = withinDateRange ? await encryptContent(relPath, rule.password) : null
 
