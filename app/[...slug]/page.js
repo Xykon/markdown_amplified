@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findIndexFile, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -33,12 +33,19 @@ export default async function MarkdownPage({ params }) {
 
   // Resolve the slug to a markdown file:
   // - If it ends in .md, use it directly
-  // - Otherwise, treat it as a directory and load <dir>/index.md
-  const relativeFile = requested.endsWith('.md')
+  // - Otherwise, treat it as a directory and load <dir>/indexFile (e.g., README.md or index.md)
+  let relativeFile = requested.endsWith('.md')
     ? requested
-    : path.posix.join(requested, 'index.md')
+    : null  // Will be determined after loading rules and config
 
-  const [rules, globalHome, globalToc, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadCookieConfig(), loadGlobalSiteHeader()])
+  const [rules, globalHome, globalToc, globalIndexFile, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadCookieConfig(), loadGlobalSiteHeader()])
+
+  if (relativeFile === null) {
+    // It's a directory, resolve the index filename
+    const indexFileName = findIndexFile(requested, rules, globalIndexFile)
+    relativeFile = path.posix.join(requested, indexFileName)
+  }
+
   const rule = findRule(relativeFile, rules)
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
@@ -47,7 +54,15 @@ export default async function MarkdownPage({ params }) {
   if (rule && !isWithinDateRange(rule)) notFound()
 
   const provider = getContentProvider()
-  const fileBuffer = await provider.readFile(relativeFile)
+  let fileBuffer = await provider.readFile(relativeFile)
+
+  // Fallback to index.md if configured file doesn't exist
+  if (!fileBuffer && !requested.endsWith('.md')) {
+    const fallbackFile = path.posix.join(requested, 'index.md')
+    if (fallbackFile !== relativeFile) {
+      fileBuffer = await provider.readFile(fallbackFile)
+    }
+  }
   if (!fileBuffer) notFound()
 
   const rawContent = fileBuffer.toString('utf-8')
@@ -63,6 +78,7 @@ export default async function MarkdownPage({ params }) {
   return (
     <PageWrapper
       slug={decodedSlug}
+      resolvedFile={relativeFile}
       content={content}
       encrypted={encrypted ?? undefined}
       validFrom={rule?.validFrom ?? undefined}

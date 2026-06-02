@@ -20,6 +20,7 @@ function configToForm(config) {
     banner: config.banner || '',
     bannerLight: config.bannerLight || '',
     bannerDark: config.bannerDark || '',
+    indexFile: config.indexFile || 'index.md',
     sbEnabled: !!(b.icon || b.iconLight || b.iconDark),
     sbIcon: b.icon || '',
     sbIconLight: b.iconLight || '',
@@ -50,6 +51,8 @@ function formToConfig(form, existing, sensitiveEditable) {
   if (form.banner) result.banner = form.banner; else delete result.banner
   if (form.bannerLight) result.bannerLight = form.bannerLight; else delete result.bannerLight
   if (form.bannerDark) result.bannerDark = form.bannerDark; else delete result.bannerDark
+
+  if (form.indexFile && form.indexFile !== 'index.md') result.indexFile = form.indexFile; else delete result.indexFile
 
   if (form.sbEnabled && (form.sbIcon || form.sbIconLight || form.sbIconDark)) {
     const sb = {}
@@ -197,6 +200,9 @@ export default function AdminSettings({ readonly, onLogout }) {
       <Section title="Header">
         <Field label="Site name" help="Shown in the header. Falls back to 'Markdown Amplified' if empty.">
           <input className="admin-input" value={form.name} onChange={e => set('name', e.target.value)} disabled={disabled} placeholder="My Site" />
+        </Field>
+        <Field label="Index file" help="Default filename when serving directories (e.g., README.md, index.md).">
+          <input className="admin-input" value={form.indexFile} onChange={e => set('indexFile', e.target.value)} disabled={disabled} placeholder="index.md" />
         </Field>
         <div className="admin-settings-row">
           <Field label="Banner">

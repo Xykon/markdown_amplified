@@ -656,7 +656,10 @@ export default function MarkdownRenderer({ content, slug, cookieConfig }) {
           let resolved = href
           if (href && !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(href)) {
             const base = assetBase ? `${assetBase}/` : ''
-            resolved = isMarkdownHref(href)
+            // Directory links (ending with /) are content links, not assets
+            const isDirLink = href.endsWith('/')
+            // Markdown files or directory links are content paths
+            resolved = isMarkdownHref(href) || isDirLink
               ? `/${base}${href}`
               : `/asset/${base}${href}`
           }

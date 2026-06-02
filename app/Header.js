@@ -21,7 +21,7 @@ function SiteButtonEl({ siteButton, theme }) {
   return <span className="header-button">{img}</span>
 }
 
-export default function Header({ slug, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
   const [bannerError, setBannerError] = useState(false)
@@ -96,30 +96,13 @@ export default function Header({ slug, hasToc = false, tocOpen = true, onToggleT
   }, [])
 
   const downloadFile = () => {
-    if (!slug) return
+    if (!resolvedFile) return
 
-    const segments = Array.isArray(slug)
-      ? slug
-      : String(slug)
-          .split('/')
-          .filter(Boolean)
-
-    if (segments.length === 0) return
-
-    // If the slug points at a directory (no .md on the last segment),
-    // resolve it to the directory's index.md, the same way the page
-    // route does. Otherwise the download link would point at a folder
-    // under /downloads/ instead of an actual markdown file.
-    const lastSegment = segments[segments.length - 1]
-    const resolvedSegments = lastSegment.toLowerCase().endsWith('.md')
-      ? segments
-      : [...segments, 'index.md']
-
-    const fileName = resolvedSegments[resolvedSegments.length - 1]
+    const fileName = resolvedFile.split('/').pop()
     if (!fileName) return
 
     // Download from the downloads directory (supports nested paths)
-    const encodedPath = resolvedSegments.map((segment) => encodeURIComponent(segment)).join('/')
+    const encodedPath = resolvedFile.split('/').map((segment) => encodeURIComponent(segment)).join('/')
     const downloadUrl = `/downloads/${encodedPath}`
 
     const a = document.createElement('a')

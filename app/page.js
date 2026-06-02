@@ -1,20 +1,29 @@
 import { getContentProvider } from '../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalSiteHeader, findSiteHeader, findRule, findHomeUrl, findTocOpen, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, findSiteHeader, findRule, findHomeUrl, findTocOpen, findIndexFile, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
 import SecurityGate from './SecurityGate'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const [rules, globalHome, globalToc, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalSiteHeader()])
-  const rule = findRule('index.md', rules)
-  const homeUrl = findHomeUrl('index.md', rules, globalHome)
-  const tocOpen = findTocOpen('index.md', rules, globalToc)
-  const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader('index.md', rules, globalSiteHeader)
+  const [rules, globalHome, globalToc, globalIndexFile, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadGlobalSiteHeader()])
+  const indexFileName = findIndexFile('', rules, globalIndexFile)
+  const rule = findRule(indexFileName, rules)
+  const homeUrl = findHomeUrl(indexFileName, rules, globalHome)
+  const tocOpen = findTocOpen(indexFileName, rules, globalToc)
+  const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(indexFileName, rules, globalSiteHeader)
 
   if (rule && !isWithinDateRange(rule)) return null
 
   const provider = getContentProvider()
-  const fileBuffer = await provider.readFile('index.md')
+  let fileBuffer = await provider.readFile(indexFileName)
+  let resolvedFile = indexFileName
+  if (!fileBuffer) {
+    // Fallback to index.md if configured file doesn't exist
+    if (indexFileName !== 'index.md') {
+      fileBuffer = await provider.readFile('index.md')
+      if (fileBuffer) resolvedFile = 'index.md'
+    }
+  }
   if (!fileBuffer) return null
 
   const rawContent = fileBuffer.toString('utf-8')
@@ -30,6 +39,7 @@ export default async function Home() {
   return (
     <SecurityGate
       slug={['index.md']}
+      resolvedFile={resolvedFile}
       content={content}
       encrypted={encrypted ?? undefined}
       validFrom={rule?.validFrom ?? undefined}

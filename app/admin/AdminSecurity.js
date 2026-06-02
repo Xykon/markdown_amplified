@@ -39,6 +39,7 @@ function ruleToForm(rule = {}) {
     banner: rule.banner || '',
     bannerLight: rule.bannerLight || '',
     bannerDark: rule.bannerDark || '',
+    indexFile: rule.indexFile || '',
   }
 }
 
@@ -61,6 +62,7 @@ function formToRule(form, existingRule = {}) {
   if (form.banner) rule.banner = form.banner
   if (form.bannerLight) rule.bannerLight = form.bannerLight
   if (form.bannerDark) rule.bannerDark = form.bannerDark
+  if (form.indexFile) rule.indexFile = form.indexFile
   return rule
 }
 
@@ -137,6 +139,10 @@ function RuleEditForm({ rule, onSave, onCancel, disabled }) {
             <option value="true">Open</option>
             <option value="false">Closed</option>
           </select>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Index file</label>
+          <input className="admin-input admin-input-sm" value={form.indexFile} onChange={e => set('indexFile', e.target.value)} disabled={disabled} placeholder="e.g., README.md or index.md" />
         </div>
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Custom name</label>

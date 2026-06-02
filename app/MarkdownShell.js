@@ -5,7 +5,7 @@ import Header from './Header'
 import TableOfContents from './TableOfContents'
 import MarkdownRenderer from './[...slug]/MarkdownRenderer'
 
-export default function MarkdownShell({ slug, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function MarkdownShell({ slug, resolvedFile, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const hasToc = useMemo(() => /^(#{1,3})\s+.+$/m.test(content), [content])
   const [tocOpen, setTocOpen] = useState(tocOpenDefault)
 
@@ -36,6 +36,7 @@ export default function MarkdownShell({ slug, content, hasDownload = true, homeU
     <>
       <Header
         slug={hasDownload ? slug : null}
+        resolvedFile={hasDownload ? resolvedFile : null}
         hasToc={hasToc}
         tocOpen={tocOpen}
         onToggleToc={() => setTocOpen((open) => !open)}
