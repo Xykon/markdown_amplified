@@ -1,11 +1,18 @@
 import './globals.css'
 import 'katex/dist/katex.min.css'
 import { ThemeProvider } from './ThemeContext'
-import { loadAnalyticsConfig } from '../lib/security.mjs'
+import { loadAnalyticsConfig, loadGlobalSiteHeader } from '../lib/security.mjs'
 import CookieBanner from './CookieBanner'
 
-export const metadata = {
-  title: 'Markdown Amplified',
+export async function generateMetadata() {
+  const { name } = await loadGlobalSiteHeader()
+  const siteName = name || 'Markdown Amplified'
+  return {
+    title: {
+      template: `%s | ${siteName}`,
+      default: siteName,
+    },
+  }
 }
 
 export default async function RootLayout({ children }) {
