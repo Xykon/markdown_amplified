@@ -30,5 +30,5 @@ This site hosts Markdown files and renders them as readable web pages.
 
 - This is a public informational page.
 - No warranty is provided for completeness, correctness, or availability.
-- No personal data is intentionally collected on this page itself.
-- If platform-level logs are processed by hosting providers, they are handled under those providers' terms and privacy policies.
+- This website uses Google Analytics. Your consent is required for cookies to be stored. [Privacy Policy](privacy.md)
+- Platform-level logs, if any, are handled under the hosting providers' own terms and privacy policies.
