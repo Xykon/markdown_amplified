@@ -107,5 +107,10 @@
       "banner": "products/header-logo.png",
       "bannerDark": "products/header-logo-dark.png"
     }
-  ]
+  ],
+  "comment_ga": "Google Analytics 4. Set ga_measurement_id to enable. A cookie consent banner is shown by default; set ga_consent_banner to false to suppress it (e.g. for intranet sites where consent is not required). ga_privacy_url adds a link to your privacy/cookie policy in the banner; ga_privacy_label overrides the default link text 'Privacy Policy'.",
+  "ga_measurement_id": "G-12345XXXXX",
+  "ga_consent_banner": true,
+  "ga_privacy_url": "https://example.com/privacy",
+  "ga_privacy_label": "Privacy Policy"
 }

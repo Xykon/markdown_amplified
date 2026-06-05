@@ -41,6 +41,10 @@ function configToForm(config) {
     cookiesMaxAge: typeof c.maxAge === 'number' ? String(c.maxAge) : '2592000',
     cookiesDomain: c.domain || '',
     cookiesStoreAdmin: c.storeAdmin === true,
+    gaId: config.ga_measurement_id || '',
+    gaConsentBanner: config.ga_consent_banner !== false,
+    gaPrivacyUrl: config.ga_privacy_url || '',
+    gaPrivacyLabel: config.ga_privacy_label || '',
   }
 }
 
@@ -99,6 +103,14 @@ function formToConfig(form, existing, sensitiveEditable) {
       else delete result.cookies
     }
   }
+
+  const gaId = form.gaId.trim()
+  if (gaId) result.ga_measurement_id = gaId; else delete result.ga_measurement_id
+  if (gaId && !form.gaConsentBanner) result.ga_consent_banner = false; else delete result.ga_consent_banner
+  const gaPrivacyUrl = form.gaPrivacyUrl.trim()
+  if (gaId && gaPrivacyUrl) result.ga_privacy_url = gaPrivacyUrl; else delete result.ga_privacy_url
+  const gaPrivacyLabel = form.gaPrivacyLabel.trim()
+  if (gaId && gaPrivacyUrl && gaPrivacyLabel) result.ga_privacy_label = gaPrivacyLabel; else delete result.ga_privacy_label
 
   return result
 }
@@ -344,6 +356,32 @@ export default function AdminSettings({ readonly, onLogout }) {
             </div>
           </div>
         )}
+      </Section>
+
+      <Section title="Analytics">
+        <Field label="GA4 Measurement ID" help="Google Analytics 4 measurement ID (e.g. G-XXXXXXXXXX). Leave empty to disable analytics.">
+          <input className="admin-input" value={form.gaId} onChange={e => set('gaId', e.target.value)} disabled={disabled} placeholder="G-XXXXXXXXXX" />
+        </Field>
+        {form.gaId && (<>
+          <div className="admin-field">
+            <label className="admin-checkbox-label">
+              <input type="checkbox" checked={form.gaConsentBanner} onChange={e => set('gaConsentBanner', e.target.checked)} disabled={disabled} />
+              Show cookie consent banner
+            </label>
+          </div>
+          {form.gaConsentBanner && (
+            <div className="admin-settings-row">
+              <Field label="Privacy policy URL" help="Optional. Shown as a link in the consent banner.">
+                <input className="admin-input" value={form.gaPrivacyUrl} onChange={e => set('gaPrivacyUrl', e.target.value)} disabled={disabled} placeholder="https://example.com/privacy" />
+              </Field>
+              {form.gaPrivacyUrl && (
+                <Field label="Link label" help={'Default: "Privacy Policy"'}>
+                  <input className="admin-input" value={form.gaPrivacyLabel} onChange={e => set('gaPrivacyLabel', e.target.value)} disabled={disabled} placeholder="Privacy Policy" />
+                </Field>
+              )}
+            </div>
+          )}
+        </>)}
       </Section>
 
       {!readonly && (

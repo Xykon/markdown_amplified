@@ -25,8 +25,11 @@
     },
     {
       "match": "secret/password.zip",
-      "password": "password",
-      "download": false
+      "password": "password"
     }
-  ]
+  ],
+  "ga_measurement_id": "G-N3QQ0T8RE9",
+  "ga_consent_banner": true,
+  "ga_privacy_url": "https://markdown-amplified.ehlers.tv/privacy.md",
+  "ga_privacy_label": "Privacy Policy"
 }
