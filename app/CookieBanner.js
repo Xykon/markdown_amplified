@@ -20,12 +20,16 @@ export default function CookieBanner({ privacyUrl, privacyLabel }) {
 
     setDecided(false)
 
-    const onScroll = () => {
-      setBannerVisible(true)
-      window.removeEventListener('scroll', onScroll)
+    const show = () => setBannerVisible(true)
+
+    // If the page is too short to scroll, show after a brief pause instead
+    if (document.documentElement.scrollHeight <= window.innerHeight) {
+      const t = setTimeout(show, 1200)
+      return () => clearTimeout(t)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+
+    window.addEventListener('scroll', show, { passive: true, once: true })
+    return () => window.removeEventListener('scroll', show)
   }, [])
 
   function loadPrefs() {

@@ -2370,7 +2370,8 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   left: 0;
   right: 0;
   z-index: 9998;
-  background: #fff;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
@@ -2403,7 +2404,7 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   font-size: 2.125rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #000;
+  color: var(--text);
   margin: 0 0 0.5rem 0;
 }
 
@@ -2411,7 +2412,7 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   margin: 0;
   font-size: 1rem;
   line-height: 1.6;
-  color: #333;
+  color: var(--text);
 }
 .sgw-cookie-text + .sgw-cookie-text {
   margin-top: 0.25rem;
@@ -2454,7 +2455,7 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
 
 .sgw-cookie-outline {
   background: transparent;
-  color: #000;
+  color: var(--text);
   border: 1px solid #fb6362;
 }
 .sgw-cookie-outline:hover {
@@ -2486,11 +2487,11 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   max-height: 90vh;
   overflow-y: auto;
   margin: auto;
-  background: #fff;
+  background: var(--surface);
   position: relative;
   z-index: 1;
   padding: 3.75rem;
-  color: #333;
+  color: var(--text);
 }
 
 .sgw-modal-close-btn {
@@ -2513,7 +2514,7 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   position: absolute;
   top: 50%;
   left: 0;
-  background-color: #000;
+  background-color: var(--text);
   border-radius: 0.0625rem;
 }
 .sgw-modal-close-btn::before { transform: translateY(-50%) rotate(45deg); }
@@ -2523,14 +2524,14 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   font-size: 2.125rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #000;
+  color: var(--text);
   margin: 0 0 1rem 0;
 }
 
 .sgw-modal-intro {
   font-size: 1rem;
   line-height: 1.6;
-  color: #333;
+  color: var(--muted);
   margin: 0 0 1.5rem 0;
 }
 .sgw-modal-intro a {
@@ -2610,15 +2611,27 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: #000;
+  color: var(--text);
   margin: 0 0 0.5rem 0;
 }
 
 .sgw-toggle-desc {
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #666;
+  color: var(--muted);
   margin: 0;
+}
+
+html[data-theme='dark'] .sgw-toggle-track {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+html[data-theme='dark'] .sgw-toggle-track::after {
+  background-color: var(--muted);
+}
+html[data-theme='dark'] .sgw-toggle-label input:disabled + .sgw-toggle-track {
+  background-color: var(--border);
+  border-color: var(--border);
 }
 
 .sgw-modal-save-btn {
