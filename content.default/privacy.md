@@ -53,7 +53,7 @@ Depending on your location, you may have rights under applicable data protection
 - Object to or restrict processing of your data
 - Withdraw consent at any time
 
-To exercise any of these rights, or if you have questions about this policy, please contact the site operator.
+To exercise any of these rights, or if you have questions about this policy, please contact the site [operator](mailto:hostmaster@ehlers.tv).
 
 ---
 
