@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 //   visible — receive pre-fetched tree prop and render it
 export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidden }) {
   const [tree, setTree] = useState(externalTree ?? null)
+  const [sectionOpen, setSectionOpen] = useState(true)
 
   // Fetch mode: when hidden=true we fetch once and report the data upward
   useEffect(() => {
@@ -31,10 +32,19 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
   return (
     <>
       <div className="sitemap-divider" />
-      <div className="toc-header">Site Map</div>
-      <div className="sitemap-tree">
-        <SiteMapNode node={tree} current={resolvedFile} depth={0} />
-      </div>
+      <button
+        className="toc-section-header"
+        onClick={() => setSectionOpen(o => !o)}
+        aria-expanded={sectionOpen}
+      >
+        <span>Site Map</span>
+        <span className="toc-section-chevron">{sectionOpen ? '▾' : '▸'}</span>
+      </button>
+      {sectionOpen && (
+        <div className="sitemap-tree">
+          <SiteMapNode node={tree} current={resolvedFile} depth={0} />
+        </div>
+      )}
     </>
   )
 }

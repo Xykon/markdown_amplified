@@ -303,6 +303,35 @@ body {
   display: none;
 }
 
+/* Shared section header style used for ToC and SiteMap collapse toggles */
+.toc-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0 0 8px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  text-align: left;
+}
+.toc-section-header:hover {
+  color: var(--text);
+}
+.toc-section-chevron {
+  font-size: 0.75em;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* Keep the non-interactive header style for any other uses */
 .toc-header {
   font-size: 0.85em;
   font-weight: 600;
@@ -320,15 +349,49 @@ body {
   padding: 0;
 }
 
+.toc-children {
+  margin-top: 0;
+}
+
 .toc-item {
   margin: 0;
   padding: 0;
 }
 
+/* Row layout for toggle + link */
+.toc-row {
+  display: flex;
+  align-items: center;
+}
+
+.toc-toggle {
+  flex-shrink: 0;
+  width: 16px;
+  height: 20px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.65em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toc-toggle:hover { color: var(--text); }
+
+.toc-toggle-placeholder {
+  flex-shrink: 0;
+  width: 16px;
+  display: inline-block;
+}
+
 .toc-link {
   display: block;
-  padding: 6px 8px;
-  margin: 2px 0;
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  margin: 1px 0;
   color: var(--text);
   text-decoration: none;
   font-size: 0.9em;
@@ -355,13 +418,11 @@ body {
 }
 
 .toc-level-2 .toc-link {
-  padding-left: 16px;
-  font-size: 0.85em;
+  font-size: 0.9em;
 }
 
 .toc-level-3 .toc-link {
-  padding-left: 24px;
-  font-size: 0.8em;
+  font-size: 0.85em;
 }
 
 @media (max-width: 1024px) {

@@ -2,30 +2,99 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// Build a two-level tree: h1/h2 at root, h3 nested under nearest parent.
+// We only display up to h3 so the tree is at most 2 levels deep.
+function buildTree(headings) {
+  const roots = []
+  let lastRoot = null
+  for (const h of headings) {
+    if (h.level <= 2) {
+      const node = { ...h, children: [] }
+      roots.push(node)
+      lastRoot = node
+    } else {
+      // h3 → child of nearest h1/h2
+      const node = { ...h, children: [] }
+      if (lastRoot) {
+        lastRoot.children.push(node)
+      } else {
+        roots.push(node)
+      }
+    }
+  }
+  return roots
+}
+
+function TocNode({ node, activeId, linkRefs, onNavigate }) {
+  const hasChildren = node.children.length > 0
+  const [open, setOpen] = useState(true)
+
+  return (
+    <li className={`toc-item toc-level-${node.level}`}>
+      <div className="toc-row">
+        {hasChildren ? (
+          <button
+            className="toc-toggle"
+            onClick={() => setOpen(o => !o)}
+            aria-label={open ? 'Collapse' : 'Expand'}
+          >
+            {open ? '▾' : '▸'}
+          </button>
+        ) : (
+          <span className="toc-toggle-placeholder" />
+        )}
+        <a
+          ref={(el) => {
+            if (el) linkRefs.current.set(node.id, el)
+            else linkRefs.current.delete(node.id)
+          }}
+          href={`#${node.id}`}
+          className={`toc-link ${activeId === node.id ? 'active' : ''}`}
+          onClick={(e) => {
+            e.preventDefault()
+            document.getElementById(node.id)?.scrollIntoView({ behavior: 'smooth' })
+            onNavigate?.()
+          }}
+        >
+          {node.text}
+        </a>
+      </div>
+      {hasChildren && open && (
+        <ul className="toc-list toc-children">
+          {node.children.map(child => (
+            <TocNode
+              key={child.id}
+              node={child}
+              activeId={activeId}
+              linkRefs={linkRefs}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  )
+}
+
 export default function TableOfContents({ content, isOpen = true, onNavigate, children }) {
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
+  const [tocSectionOpen, setTocSectionOpen] = useState(true)
   const linkRefs = useRef(new Map())
 
   useEffect(() => {
-    // Walk the markdown line by line so we can skip fenced code blocks,
-    // otherwise comments like `# foo` inside ```python blocks get picked
-    // up as fake h1 entries with no matching anchor in the rendered page.
     const matches = []
     const slugCounts = new Map()
     const lines = content.split('\n')
-    let fence = null // current fence marker: '```' or '~~~' or null
+    let fence = null
 
     for (const rawLine of lines) {
       const line = rawLine.replace(/\r$/, '')
       const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})/)
       if (fenceMatch) {
         const marker = fenceMatch[1][0].repeat(3)
-        if (fence === null) {
-          fence = marker
-        } else if (marker === fence) {
-          fence = null
-        }
+        if (fence === null) fence = marker
+        else if (marker === fence) fence = null
         continue
       }
       if (fence !== null) continue
@@ -36,16 +105,11 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
       const level = headingMatch[1].length
       const text = headingMatch[2].trim()
 
-      // Match github-slugger (used by rehype-slug): lowercase, drop chars
-      // that are not alphanumeric / whitespace / `-` / `_`, then turn
-      // EACH whitespace char into `-` (do not collapse runs, do not trim
-      // leading/trailing `-`).
       let base = text
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s/g, '-')
 
-      // De-duplicate the same way github-slugger does: foo, foo-1, foo-2…
       const seen = slugCounts.get(base) || 0
       const id = seen === 0 ? base : `${base}-${seen}`
       slugCounts.set(base, seen + 1)
@@ -57,30 +121,21 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
   }, [content])
 
   useEffect(() => {
-    // Track which heading is in view
     const handleScroll = () => {
       if (headings.length === 0) return
+      const els = headings
+        .map(h => ({ ...h, element: document.getElementById(h.id) }))
+        .filter(h => h.element)
+      if (els.length === 0) return
 
-      const headingElements = headings
-        .map((h) => ({
-          ...h,
-          element: document.getElementById(h.id),
-        }))
-        .filter((h) => h.element)
-
-      if (headingElements.length === 0) return
-
-      // Find the heading closest to the top of the viewport
-      let closest = headingElements[0]
+      let closest = els[0]
       const scrollOffset = 100
-
-      for (const h of headingElements) {
+      for (const h of els) {
         const rect = h.element.getBoundingClientRect()
         if (rect.top <= scrollOffset && rect.top > closest.element.getBoundingClientRect().top) {
           closest = h
         }
       }
-
       setActiveId(closest.id)
     }
 
@@ -90,52 +145,42 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
 
   useEffect(() => {
     if (!isOpen || !activeId) return
-
-    const activeLink = linkRefs.current.get(activeId)
-    if (!activeLink) return
-
-    activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    linkRefs.current.get(activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [activeId, isOpen])
 
-  // Filter to show only h2 and h3 for cleaner TOC
-  const tocHeadings = headings.filter((h) => h.level <= 3)
+  const tocHeadings = headings.filter(h => h.level <= 3)
   const hasTocContent = tocHeadings.length > 0
+  const tree = hasTocContent ? buildTree(tocHeadings) : []
 
-  // Render nothing only when there's no ToC content AND no extra content (e.g. SiteMap)
   if (!hasTocContent && !children) return null
 
   return (
     <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
-      {hasTocContent && <>
-      <div className="toc-header">Table of Contents</div>
-      <ul className="toc-list">
-        {tocHeadings.map((heading) => (
-          <li key={heading.id} className={`toc-item toc-level-${heading.level}`}>
-            <a
-              ref={(node) => {
-                if (node) {
-                  linkRefs.current.set(heading.id, node)
-                } else {
-                  linkRefs.current.delete(heading.id)
-                }
-              }}
-              href={`#${heading.id}`}
-              className={`toc-link ${activeId === heading.id ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                const element = document.getElementById(heading.id)
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' })
-                  onNavigate?.()
-                }
-              }}
-            >
-              {heading.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-      </>}
+      {hasTocContent && (
+        <>
+          <button
+            className="toc-section-header"
+            onClick={() => setTocSectionOpen(o => !o)}
+            aria-expanded={tocSectionOpen}
+          >
+            <span>Table of Contents</span>
+            <span className="toc-section-chevron">{tocSectionOpen ? '▾' : '▸'}</span>
+          </button>
+          {tocSectionOpen && (
+            <ul className="toc-list">
+              {tree.map(node => (
+                <TocNode
+                  key={node.id}
+                  node={node}
+                  activeId={activeId}
+                  linkRefs={linkRefs}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </ul>
+          )}
+        </>
+      )}
       {children}
     </nav>
   )
