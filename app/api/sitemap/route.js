@@ -5,7 +5,6 @@ import {
   loadSecurityRules,
   loadCookieConfig,
   loadGlobalIndexFile,
-  loadGlobalHome,
   findRule,
   findIndexFile,
   isWithinDateRange,
@@ -59,14 +58,27 @@ function extractMarkdownLinks(content, fromFile) {
   return links
 }
 
-// Determine the BFS root file and the URL the "Home" node should link to,
-// based on the same home-rule logic used by findHomeUrl in security.mjs.
-function getRootContext(currentFile, rules, globalHome, globalIndexFile) {
-  if (!currentFile) {
-    return { rootFile: globalIndexFile || 'index.md', rootHref: '/' }
-  }
+// Determine the BFS root file and the URL the "Home" node should link to.
+//
+// Rule: when viewing a file inside a subdirectory, always BFS from that
+// folder's index — regardless of whether the folder is linked from the
+// global root. This makes the site map contextual (shows what's in *this*
+// folder) and handles "obscure" directories that are never linked elsewhere.
+//
+// The only exception is an explicit `home: 'site'` rule, which forces the
+// global root BFS (useful when a subfolder intentionally shows the full map).
+//
+// `home: 'folder'` and any custom URL only affect the href of the root
+// "Home" node, not which files are discovered.
+function getRootContext(currentFile, rules, globalIndexFile) {
+  const globalRoot = { rootFile: globalIndexFile || 'index.md', rootHref: '/' }
 
-  // Find the most specific matching rule with a home property
+  // No file context, or file is at the content root → global site map
+  if (!currentFile || !currentFile.includes('/')) return globalRoot
+
+  const folder = currentFile.split('/')[0]
+
+  // Check for an explicit rule that overrides site-map root behaviour
   let best = null
   for (const rule of rules) {
     if (!rule.match || rule.home === undefined) continue
@@ -74,31 +86,24 @@ function getRootContext(currentFile, rules, globalHome, globalIndexFile) {
     const matched = m.endsWith('/') ? currentFile.startsWith(m) : currentFile === m
     if (matched && (!best || m.length > best.match.length)) best = rule
   }
+  const homeValue = best?.home
 
-  const homeValue = best !== null ? best.home : (globalHome ?? 'site')
+  // Explicit 'site' → honour it and use global root
+  if (homeValue === 'site') return globalRoot
 
-  if (homeValue === 'folder' && currentFile.includes('/')) {
-    const folder = currentFile.split('/')[0]
-    const folderIndex = findIndexFile(`${folder}/placeholder.md`, rules, globalIndexFile || 'index.md')
-    return {
-      rootFile: `${folder}/${folderIndex}`,
-      rootHref: `/${folder}/`,
-    }
+  // For all other cases (no rule, 'folder', custom URL, false) when in a
+  // subdirectory: BFS from this folder's index so every file in the folder
+  // is discoverable whether or not it's linked from the public root.
+  const folderIndex = findIndexFile(`${folder}/placeholder.md`, rules, globalIndexFile || 'index.md')
+  const rootFile = `${folder}/${folderIndex}`
+
+  // Determine the href for the "Home" node
+  let rootHref = `/${folder}/`
+  if (homeValue && homeValue !== 'folder' && homeValue !== false && typeof homeValue === 'string') {
+    rootHref = homeValue  // custom URL configured in rules
   }
 
-  if (homeValue && homeValue !== 'site' && homeValue !== 'folder' && homeValue !== false && typeof homeValue === 'string') {
-    // Custom home URL — BFS still starts from the file's folder index if it's a subfolder,
-    // otherwise global root. Use the custom URL for the Home link.
-    if (currentFile.includes('/')) {
-      const folder = currentFile.split('/')[0]
-      const folderIndex = findIndexFile(`${folder}/placeholder.md`, rules, globalIndexFile || 'index.md')
-      return { rootFile: `${folder}/${folderIndex}`, rootHref: homeValue }
-    }
-    return { rootFile: globalIndexFile || 'index.md', rootHref: homeValue }
-  }
-
-  // 'site', false, null, or undefined → global root
-  return { rootFile: globalIndexFile || 'index.md', rootHref: '/' }
+  return { rootFile, rootHref }
 }
 
 export async function GET(request) {
@@ -107,14 +112,20 @@ export async function GET(request) {
     const currentFile = searchParams.get('file') || null
 
     const provider = getContentProvider()
-    const [rules, cookieConfig, globalIndexFile, globalHome] = await Promise.all([
+    const [rules, cookieConfig, globalIndexFile] = await Promise.all([
       loadSecurityRules(),
       loadCookieConfig(),
       loadGlobalIndexFile(),
-      loadGlobalHome(),
     ])
 
-    const { rootFile, rootHref } = getRootContext(currentFile, rules, globalHome, globalIndexFile)
+    let { rootFile, rootHref } = getRootContext(currentFile, rules, globalIndexFile)
+
+    // If the derived index file doesn't exist, fall back to the currently
+    // open file — it was explicitly navigated to and can serve as the root.
+    if (currentFile && rootFile !== currentFile) {
+      const probe = await provider.readFile(rootFile)
+      if (!probe) rootFile = currentFile
+    }
 
     // Collect the user's persisted unlock passwords from cookies.
     const unlockPasswords = new Set()
