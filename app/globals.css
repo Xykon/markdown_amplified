@@ -291,16 +291,23 @@ body {
   flex-shrink: 0;
   width: 240px;
   height: fit-content;
-  padding: 16px;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: 10px;
   overflow-y: auto;
   max-height: calc(100vh - 92px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .table-of-contents.is-closed {
   display: none;
+}
+
+/* Individual section cards inside the sidebar */
+.toc-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
 }
 
 /* Row that holds the section-collapse button + expand-all button */
@@ -354,7 +361,7 @@ body {
 }
 .toc-expand-all:hover {
   color: var(--text);
-  background: var(--surface-soft);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 /* Keep the non-interactive header style for any other uses */
@@ -466,11 +473,30 @@ body {
     max-height: calc(100vh - 76px);
     margin-bottom: 0;
     z-index: 160;
+    /* Restore panel styling for the mobile overlay */
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
   }
 
   .table-of-contents.is-closed {
     display: none;
+  }
+
+  /* Cards are redundant inside the mobile panel — flatten them */
+  .table-of-contents .toc-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  /* Restore spacing between flattened sections */
+  .table-of-contents .toc-card + .toc-card {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
   }
 }
 
@@ -491,11 +517,6 @@ body {
 }
 
 /* ── Site Map ────────────────────────────────────────────────────────────── */
-.sitemap-divider {
-  margin: 14px 0 12px;
-  border: none;
-  border-top: 1px solid var(--border);
-}
 
 .sitemap-tree {
   /* nothing — inherits sidebar scroll */

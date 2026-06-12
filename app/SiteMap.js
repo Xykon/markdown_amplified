@@ -8,6 +8,11 @@ import { useEffect, useState } from 'react'
 export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidden, showSiteroot }) {
   const [tree, setTree] = useState(externalTree ?? null)
   const [sectionOpen, setSectionOpen] = useState(true)
+  const [treeKey, setTreeKey] = useState(0)
+  const [nodeDefault, setNodeDefault] = useState(false)
+
+  const expandAll  = () => { setNodeDefault(true);  setTreeKey(k => k + 1) }
+  const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
 
   // Fetch mode: when hidden=true we fetch once and report the data upward.
   // Pass the current file so the API can determine the correct BFS root
@@ -33,8 +38,7 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
   if (!tree) return null
 
   return (
-    <>
-      <div className="sitemap-divider" />
+    <div className="toc-card">
       <div className="toc-section-row">
         <button
           className="toc-section-header"
@@ -44,27 +48,36 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
           <span>Site Map</span>
           <span className="toc-section-chevron">{sectionOpen ? '▾' : '▸'}</span>
         </button>
+        {sectionOpen && tree.children?.length > 0 && (
+          <button
+            className="toc-expand-all"
+            onClick={nodeDefault ? collapseAll : expandAll}
+            title={nodeDefault ? 'Collapse all' : 'Expand all'}
+          >
+            {nodeDefault ? '▸▸' : '▾▾'}
+          </button>
+        )}
       </div>
       {sectionOpen && (
-        <div className="sitemap-tree">
+        <div className="sitemap-tree" key={treeKey}>
           {showSiteroot && tree.rootHref && tree.rootHref !== '/' && (
             <div className="sitemap-row sitemap-depth-0">
               <span className="sitemap-toggle-placeholder" />
               <a href="/" className="sitemap-link sitemap-siteroot">↑ Site Root</a>
             </div>
           )}
-          <SiteMapNode node={tree} current={resolvedFile} depth={0} />
+          <SiteMapNode node={tree} current={resolvedFile} depth={0} defaultOpen={nodeDefault} />
         </div>
       )}
-    </>
+    </div>
   )
 }
 
-function SiteMapNode({ node, current, depth }) {
+function SiteMapNode({ node, current, depth, defaultOpen }) {
   const isCurrent = node.path === current
   const hasChildren = node.children?.length > 0
   const isRoot = depth === 0
-  const [open, setOpen] = useState(depth < 2)
+  const [open, setOpen] = useState(defaultOpen ?? false)
 
   // Root node uses the home URL returned by the API (respects 'folder' and custom home rules)
   const href = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
@@ -101,6 +114,7 @@ function SiteMapNode({ node, current, depth }) {
               node={child}
               current={current}
               depth={depth + 1}
+              defaultOpen={defaultOpen}
             />
           ))}
         </div>

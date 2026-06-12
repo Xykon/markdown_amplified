@@ -160,7 +160,7 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, to
     <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
       {topContent}
       {hasTocContent && (
-        <>
+        <div className="toc-card">
           <div className="toc-section-row">
             <button
               className="toc-section-header"
@@ -194,7 +194,7 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, to
               ))}
             </ul>
           )}
-        </>
+        </div>
       )}
       {children}
     </nav>
