@@ -2,7 +2,7 @@
 
 *Last updated: June 2026*
 
-This privacy policy explains how this website collects, uses, and protects information about visitors.
+This privacy policy applies exclusively to websites hosted under the **ehlers.tv** domain and its subdomains. It explains how these websites collect, use, and protect information about visitors.
 
 ---
 

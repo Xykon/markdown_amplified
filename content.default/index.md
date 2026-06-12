@@ -7,8 +7,9 @@ This site hosts Markdown files and renders them as readable web pages.
 - Only files that are linked from index.md are publicly discoverable.
 - Private files can be shared via full URL to the filename.
 - Optional password protection and access time restrictions configurable.
-- Optional Admin Interface with file browser
-- Optional cookie support for passwords
+- Optional Admin Interface with file browser.
+- Optional cookie support for passwords.
+- Optional Google Analytics tracking with consent banner.
 
 ## Project Links
 
@@ -22,13 +23,14 @@ This site hosts Markdown files and renders them as readable web pages.
 
 ## Copyright and Legal Notices
 
-- © 2026 Christian Ehlers. All rights reserved.
+- © 2026 [Christian Ehlers](https://www.ehlers.tv). All rights reserved.
 - Amazon Web Services, AWS, AWS Amplify, Amazon S3, and Amazon Simple Storage Service are trademarks of Amazon.com, Inc. or its affiliates.
 - GitHub is a trademark of GitHub, Inc.
+- [Privacy Policy](privacy.md)
 
 ## EU Public Site Notice
 
 - This is a public informational page.
 - No warranty is provided for completeness, correctness, or availability.
-- This website uses Google Analytics. Your consent is required for cookies to be stored. [Privacy Policy](privacy.md)
+- This website uses Google Analytics. Your consent is required for cookies to be stored.
 - Platform-level logs, if any, are handled under the hosting providers' own terms and privacy policies.
