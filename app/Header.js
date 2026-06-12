@@ -21,7 +21,7 @@ function SiteButtonEl({ siteButton, theme }) {
   return <span className="header-button">{img}</span>
 }
 
-export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = true, onToggleToc, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = false, onToggleToc, hasSiteMap = false, siteMapOpen = false, onToggleSiteMap, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
   const [bannerError, setBannerError] = useState(false)
@@ -167,6 +167,27 @@ export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = t
                 <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
                 <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
                 <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+              </svg>
+            </button>
+          )}
+          {hasSiteMap && (
+            <button
+              className={`header-button toc-toggle-button ${siteMapOpen ? 'is-open' : ''}`}
+              onClick={onToggleSiteMap}
+              title={siteMapOpen ? 'Hide site map' : 'Show site map'}
+              aria-label={siteMapOpen ? 'Hide site map' : 'Show site map'}
+              aria-pressed={siteMapOpen}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="4" rx="1" />
+                <rect x="2" y="17" width="6" height="4" rx="1" />
+                <rect x="9" y="17" width="6" height="4" rx="1" />
+                <rect x="16" y="17" width="6" height="4" rx="1" />
+                <line x1="12" y1="6" x2="12" y2="11" />
+                <line x1="5" y1="17" x2="5" y2="11" />
+                <line x1="12" y1="11" x2="12" y2="17" />
+                <line x1="19" y1="17" x2="19" y2="11" />
+                <line x1="5" y1="11" x2="19" y2="11" />
               </svg>
             </button>
           )}

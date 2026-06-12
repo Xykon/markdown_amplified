@@ -71,11 +71,10 @@ function TocNode({ node, activeId, linkRefs, onNavigate, defaultOpen }) {
   )
 }
 
-export default function TableOfContents({ content, isOpen = true, onNavigate, topContent, children }) {
+export default function TableOfContents({ content, onNavigate }) {
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [tocSectionOpen, setTocSectionOpen] = useState(true)
-  // treeKey: bump to remount all TocNodes (resets individual open state to nodeDefault)
   const [treeKey, setTreeKey] = useState(0)
   const [nodeDefault, setNodeDefault] = useState(false)
   const linkRefs = useRef(new Map())
@@ -142,61 +141,54 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, to
   }, [headings])
 
   useEffect(() => {
-    if (!isOpen || !activeId) return
+    if (!activeId) return
     linkRefs.current.get(activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [activeId, isOpen])
+  }, [activeId])
 
   const tocHeadings = headings.filter(h => h.level <= 3)
-  const hasTocContent = tocHeadings.length > 0
-  const tree = hasTocContent ? buildTree(tocHeadings) : []
+  const tree = buildTree(tocHeadings)
   const hasCollapsibleNodes = tree.some(n => n.children.length > 0)
 
-  const expandAll = () => { setNodeDefault(true); setTreeKey(k => k + 1) }
+  const expandAll  = () => { setNodeDefault(true);  setTreeKey(k => k + 1) }
   const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
 
-  if (!hasTocContent && !children && !topContent) return null
-
   return (
-    <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
-      {topContent}
-      {hasTocContent && (
-        <div className="toc-card">
-          <div className="toc-section-row">
+    <nav className="table-of-contents">
+      <div className="toc-card">
+        <div className="toc-section-row">
+          <button
+            className="toc-section-header"
+            onClick={() => setTocSectionOpen(o => !o)}
+            aria-expanded={tocSectionOpen}
+          >
+            <span>Table of Contents</span>
+            <span className="toc-section-chevron">{tocSectionOpen ? '▾' : '▸'}</span>
+          </button>
+          {tocSectionOpen && hasCollapsibleNodes && (
             <button
-              className="toc-section-header"
-              onClick={() => setTocSectionOpen(o => !o)}
-              aria-expanded={tocSectionOpen}
+              className="toc-expand-all"
+              onClick={nodeDefault ? collapseAll : expandAll}
+              title={nodeDefault ? 'Collapse all' : 'Expand all'}
             >
-              <span>Table of Contents</span>
-              <span className="toc-section-chevron">{tocSectionOpen ? '▾' : '▸'}</span>
+              {nodeDefault ? '▸▸' : '▾▾'}
             </button>
-            {tocSectionOpen && hasCollapsibleNodes && (
-              <button
-                className="toc-expand-all"
-                onClick={nodeDefault ? collapseAll : expandAll}
-                title={nodeDefault ? 'Collapse all' : 'Expand all'}
-              >
-                {nodeDefault ? '▸▸' : '▾▾'}
-              </button>
-            )}
-          </div>
-          {tocSectionOpen && (
-            <ul className="toc-list" key={treeKey}>
-              {tree.map(node => (
-                <TocNode
-                  key={node.id}
-                  node={node}
-                  activeId={activeId}
-                  linkRefs={linkRefs}
-                  onNavigate={onNavigate}
-                  defaultOpen={nodeDefault}
-                />
-              ))}
-            </ul>
           )}
         </div>
-      )}
-      {children}
+        {tocSectionOpen && (
+          <ul className="toc-list" key={treeKey}>
+            {tree.map(node => (
+              <TocNode
+                key={node.id}
+                node={node}
+                activeId={activeId}
+                linkRefs={linkRefs}
+                onNavigate={onNavigate}
+                defaultOpen={nodeDefault}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </nav>
   )
 }

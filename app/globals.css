@@ -285,7 +285,8 @@ body {
 }
 
 /* Table of Contents / Sidebar */
-.table-of-contents {
+/* Sticky sidebar container — holds ToC and/or SiteMap cards */
+.sidebar {
   position: sticky;
   top: 72px;
   flex-shrink: 0;
@@ -298,11 +299,12 @@ body {
   gap: 8px;
 }
 
-.table-of-contents.is-closed {
-  display: none;
+/* ToC nav is a semantic wrapper; layout handled by .sidebar */
+.table-of-contents {
+  display: contents;
 }
 
-/* Individual section cards inside the sidebar */
+/* Individual section cards */
 .toc-card {
   background: var(--surface-soft);
   border: 1px solid var(--border);
@@ -459,21 +461,21 @@ body {
 }
 
 @media (max-width: 1024px) {
-  .table-of-contents {
+  .sidebar {
     width: 200px;
   }
 }
 
 @media (max-width: 768px) {
-  .table-of-contents {
+  .sidebar {
     position: fixed;
     left: 8px;
     top: 64px;
     width: min(320px, calc(100vw - 16px));
     max-height: calc(100vh - 76px);
-    margin-bottom: 0;
     z-index: 160;
-    /* Restore panel styling for the mobile overlay */
+    gap: 0;
+    /* Panel styling for the mobile overlay */
     background: var(--surface-soft);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -481,22 +483,12 @@ body {
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
   }
 
-  .table-of-contents.is-closed {
-    display: none;
-  }
-
   /* Cards are redundant inside the mobile panel — flatten them */
-  .table-of-contents .toc-card {
+  .sidebar .toc-card {
     background: transparent;
     border: none;
     border-radius: 0;
     padding: 0;
-  }
-  /* Restore spacing between flattened sections */
-  .table-of-contents .toc-card + .toc-card {
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
   }
 }
 

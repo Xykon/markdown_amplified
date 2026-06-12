@@ -36,6 +36,7 @@ function ruleToForm(rule = {}) {
     download: tri(rule.download),
     home, homeCustom,
     toc: tri(rule.toc),
+    sitemap: tri(rule.sitemap),
     indexFile: rule.indexFile || '',
     name: rule.name || '',
     banner: rule.banner || '',
@@ -63,6 +64,8 @@ function formToRule(form, existingRule = {}) {
   else if (form.home === '_custom' && form.homeCustom) rule.home = form.homeCustom
   if (form.toc === 'true') rule.toc = true
   else if (form.toc === 'false') rule.toc = false
+  if (form.sitemap === 'true') rule.sitemap = true
+  else if (form.sitemap === 'false') rule.sitemap = false
   if (form.indexFile) rule.indexFile = form.indexFile
   if (form.name) rule.name = form.name
   if (form.banner) rule.banner = form.banner
@@ -155,6 +158,14 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
           <label className="admin-field-label">Table of contents</label>
           <select className="admin-input admin-input-sm" value={form.toc} onChange={e => set('toc', e.target.value)} disabled={disabled}>
             <option value="">Default (open)</option>
+            <option value="true">Open</option>
+            <option value="false">Closed</option>
+          </select>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Site map default</label>
+          <select className="admin-input admin-input-sm" value={form.sitemap} onChange={e => set('sitemap', e.target.value)} disabled={disabled}>
+            <option value="">Default (closed)</option>
             <option value="true">Open</option>
             <option value="false">Closed</option>
           </select>
