@@ -60,26 +60,25 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
       </div>
       {sectionOpen && (
         <div className="sitemap-tree" key={treeKey}>
-          {showSiteroot && tree.rootHref && tree.rootHref !== '/' && (
-            <div className="sitemap-row sitemap-depth-0">
-              <span className="sitemap-toggle-placeholder" />
-              <a href="/" className="sitemap-link sitemap-siteroot">↑ Site Root</a>
-            </div>
-          )}
-          <SiteMapNode node={tree} current={resolvedFile} depth={0} defaultOpen={nodeDefault} />
+          <SiteMapNode
+            node={tree}
+            current={resolvedFile}
+            depth={0}
+            defaultOpen={nodeDefault}
+            showSiteroot={showSiteroot}
+          />
         </div>
       )}
     </div>
   )
 }
 
-function SiteMapNode({ node, current, depth, defaultOpen }) {
+function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
   const isCurrent = node.path === current
   const hasChildren = node.children?.length > 0
   const isRoot = depth === 0
   const [open, setOpen] = useState(defaultOpen ?? false)
 
-  // Root node uses the home URL returned by the API (respects 'folder' and custom home rules)
   const href = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
 
   const linkClass = [
@@ -88,6 +87,34 @@ function SiteMapNode({ node, current, depth, defaultOpen }) {
     isRoot ? 'is-root' : '',
   ].filter(Boolean).join(' ')
 
+  // Root node: not collapsible — Home row always shows, children always visible
+  if (isRoot) {
+    return (
+      <div className="sitemap-node">
+        <div className="sitemap-row sitemap-depth-0">
+          <a href={href} className={linkClass}>Home</a>
+          {showSiteroot && node.rootHref && node.rootHref !== '/' && (
+            <a href="/" className="sitemap-siteroot-chip">↑ Site Root</a>
+          )}
+        </div>
+        {hasChildren && (
+          <div className="sitemap-children">
+            {node.children.map(child => (
+              <SiteMapNode
+                key={child.path}
+                node={child}
+                current={current}
+                depth={depth + 1}
+                defaultOpen={defaultOpen}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Non-root nodes: collapsible if they have children
   return (
     <div className="sitemap-node">
       <div className={`sitemap-row sitemap-depth-${depth}`}>
@@ -102,9 +129,7 @@ function SiteMapNode({ node, current, depth, defaultOpen }) {
         ) : (
           <span className="sitemap-toggle-placeholder" />
         )}
-        <a href={href} className={linkClass}>
-          {isRoot ? 'Home' : node.title}
-        </a>
+        <a href={href} className={linkClass}>{node.title}</a>
       </div>
       {hasChildren && open && (
         <div className="sitemap-children">

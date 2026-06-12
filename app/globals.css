@@ -316,13 +316,11 @@ body {
 .toc-section-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
-/* Shared section header style used for ToC and SiteMap collapse toggles */
+/* Section header as an outlined pill — no harsh underline */
 .toc-section-header {
   display: flex;
   flex: 1;
@@ -330,18 +328,21 @@ body {
   justify-content: space-between;
   min-width: 0;
   background: none;
-  border: none;
-  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
   cursor: pointer;
-  font-size: 0.85em;
+  font-size: 0.8em;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--muted);
   text-align: left;
+  transition: border-color 0.15s, color 0.15s;
 }
 .toc-section-header:hover {
   color: var(--text);
+  border-color: var(--text);
 }
 .toc-section-chevron {
   font-size: 0.75em;
@@ -366,17 +367,6 @@ body {
   background: rgba(0, 0, 0, 0.06);
 }
 
-/* Keep the non-interactive header style for any other uses */
-.toc-header {
-  font-size: 0.85em;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
 
 .toc-list {
   list-style: none;
@@ -582,12 +572,21 @@ body {
 .sitemap-link.is-root.is-current {
   font-weight: 700;
 }
-.sitemap-link.sitemap-siteroot {
-  font-size: 0.8em;
+/* Site root chip — inline to the right of Home */
+.sitemap-siteroot-chip {
+  flex-shrink: 0;
+  font-size: 0.72em;
   color: var(--muted);
+  text-decoration: none;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
 }
-.sitemap-link.sitemap-siteroot:hover {
+.sitemap-siteroot-chip:hover {
   color: var(--link);
+  border-color: var(--link);
 }
 
 .sitemap-children {
