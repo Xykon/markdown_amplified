@@ -20,16 +20,45 @@ export default function CookieBanner({ privacyUrl, privacyLabel }) {
 
     setDecided(false)
 
-    const show = () => setBannerVisible(true)
+    let fired = false
+    let timer
+    let ro
 
-    // If the page is too short to scroll, show after a brief pause instead
-    if (document.documentElement.scrollHeight <= window.innerHeight) {
-      const t = setTimeout(show, 1200)
-      return () => clearTimeout(t)
+    function fire() {
+      if (fired) return
+      fired = true
+      clearTimeout(timer)
+      ro.disconnect()
+      setBannerVisible(true)
     }
 
-    window.addEventListener('scroll', show, { passive: true, once: true })
-    return () => window.removeEventListener('scroll', show)
+    // Once the page becomes scrollable (content renders in), switch to scroll-trigger
+    // and cancel the fallback timer so we don't interrupt mid-read.
+    function switchToScroll() {
+      clearTimeout(timer)
+      window.addEventListener('scroll', fire, { passive: true, once: true })
+    }
+
+    function checkScrollable() {
+      if (document.documentElement.scrollHeight > window.innerHeight) {
+        ro.disconnect()
+        switchToScroll()
+      }
+    }
+
+    ro = new ResizeObserver(checkScrollable)
+    ro.observe(document.body)
+    checkScrollable() // catches pages that are already scrollable at mount
+
+    // Fallback: show after a pause for pages that are genuinely too short to scroll
+    timer = setTimeout(fire, 1200)
+
+    return () => {
+      fired = true
+      clearTimeout(timer)
+      ro.disconnect()
+      window.removeEventListener('scroll', fire)
+    }
   }, [])
 
   function loadPrefs() {
