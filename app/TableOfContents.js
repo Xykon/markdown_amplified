@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-export default function TableOfContents({ content, isOpen = true, onNavigate }) {
+export default function TableOfContents({ content, isOpen = true, onNavigate, children }) {
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
   const linkRefs = useRef(new Map())
@@ -97,19 +97,16 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
     activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [activeId, isOpen])
 
-  if (headings.length === 0) {
-    return null
-  }
-
   // Filter to show only h2 and h3 for cleaner TOC
   const tocHeadings = headings.filter((h) => h.level <= 3)
+  const hasTocContent = tocHeadings.length > 0
 
-  if (tocHeadings.length === 0) {
-    return null
-  }
+  // Render nothing only when there's no ToC content AND no extra content (e.g. SiteMap)
+  if (!hasTocContent && !children) return null
 
   return (
     <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
+      {hasTocContent && <>
       <div className="toc-header">Table of Contents</div>
       <ul className="toc-list">
         {tocHeadings.map((heading) => (
@@ -138,6 +135,8 @@ export default function TableOfContents({ content, isOpen = true, onNavigate }) 
           </li>
         ))}
       </ul>
+      </>}
+      {children}
     </nav>
   )
 }
