@@ -6,13 +6,15 @@ import TableOfContents from './TableOfContents'
 import MarkdownRenderer from './[...slug]/MarkdownRenderer'
 import SiteMap from './SiteMap'
 
-export default function MarkdownShell({ slug, resolvedFile, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
-  const hasToc = useMemo(() => /^(#{1,3})\s+.+$/m.test(content), [content])
+export default function MarkdownShell({ slug, resolvedFile, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, displayConfig, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+  const { showToc = true, showSitemap = true, showSitemapFirst = false, showSitemapSiteroot = false } = displayConfig ?? {}
+
+  const hasToc = useMemo(() => showToc && /^(#{1,3})\s+.+$/m.test(content), [content, showToc])
   const [tocOpen, setTocOpen] = useState(tocOpenDefault)
   const [siteMapTree, setSiteMapTree] = useState(null)
 
-  // Show the sidebar whenever the ToC has headings or the site map has loaded content
-  const hasSidebar = hasToc || siteMapTree !== null
+  // Show the sidebar when ToC has headings or site map has loaded (respecting feature flags)
+  const hasSidebar = hasToc || (showSitemap && siteMapTree !== null)
 
   const layoutClassName = [
     'page-layout',
@@ -59,25 +61,27 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
       />
 
       {/*
-        SiteMap is always mounted so it can fetch in the background.
+        Hidden SiteMap fetches in the background when the feature is enabled.
         On pages without ToC headings, onLoad fires → siteMapTree is set →
         hasSidebar becomes true → the sidebar renders on the next paint.
       */}
-      <SiteMap
-        resolvedFile={resolvedFile}
-        onLoad={setSiteMapTree}
-        hidden
-      />
+      {showSitemap && (
+        <SiteMap resolvedFile={resolvedFile} onLoad={setSiteMapTree} hidden showSiteroot={showSitemapSiteroot} />
+      )}
 
       <div className={layoutClassName}>
         {hasSidebar && (
           <>
-            <TableOfContents content={content} isOpen={tocOpen} onNavigate={closeTocOnMobile}>
-              {siteMapTree && (
-                <SiteMap
-                  resolvedFile={resolvedFile}
-                  tree={siteMapTree}
-                />
+            <TableOfContents
+              content={hasToc ? content : ''}
+              isOpen={tocOpen}
+              onNavigate={closeTocOnMobile}
+              topContent={showSitemap && siteMapTree && showSitemapFirst
+                ? <SiteMap resolvedFile={resolvedFile} tree={siteMapTree} showSiteroot={showSitemapSiteroot} />
+                : undefined}
+            >
+              {showSitemap && siteMapTree && !showSitemapFirst && (
+                <SiteMap resolvedFile={resolvedFile} tree={siteMapTree} showSiteroot={showSitemapSiteroot} />
               )}
             </TableOfContents>
             {tocOpen && (

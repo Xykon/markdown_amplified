@@ -1,16 +1,17 @@
 import { getContentProvider } from '../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, findSiteHeader, findRule, findHomeUrl, findTocOpen, findIndexFile, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadGlobalDisplayConfig, findSiteHeader, findRule, findHomeUrl, findTocOpen, findIndexFile, findDisplayConfig, isWithinDateRange, isDownloadAllowed, encryptContent } from '../lib/security.mjs'
 import SecurityGate from './SecurityGate'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const [rules, globalHome, globalToc, globalIndexFile, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadGlobalSiteHeader()])
+  const [rules, globalHome, globalToc, globalIndexFile, globalSiteHeader, globalDisplayConfig] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadGlobalSiteHeader(), loadGlobalDisplayConfig()])
   const indexFileName = findIndexFile('', rules, globalIndexFile)
   const rule = findRule(indexFileName, rules)
   const homeUrl = findHomeUrl(indexFileName, rules, globalHome)
   const tocOpen = findTocOpen(indexFileName, rules, globalToc)
   const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(indexFileName, rules, globalSiteHeader)
+  const displayConfig = findDisplayConfig(indexFileName, rules, globalDisplayConfig)
 
   if (rule && !isWithinDateRange(rule)) return null
 
@@ -47,6 +48,7 @@ export default async function Home() {
       hasDownload={isDownloadAllowed(rule)}
       homeUrl={homeUrl ?? undefined}
       tocOpen={tocOpen}
+      displayConfig={displayConfig}
       siteName={siteName}
       siteBanner={siteBanner}
       siteBannerLight={siteBannerLight ?? undefined}

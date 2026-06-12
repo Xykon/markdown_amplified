@@ -71,7 +71,7 @@ function TocNode({ node, activeId, linkRefs, onNavigate, defaultOpen }) {
   )
 }
 
-export default function TableOfContents({ content, isOpen = true, onNavigate, children }) {
+export default function TableOfContents({ content, isOpen = true, onNavigate, topContent, children }) {
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [tocSectionOpen, setTocSectionOpen] = useState(true)
@@ -154,10 +154,11 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
   const expandAll = () => { setNodeDefault(true); setTreeKey(k => k + 1) }
   const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
 
-  if (!hasTocContent && !children) return null
+  if (!hasTocContent && !children && !topContent) return null
 
   return (
     <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
+      {topContent}
       {hasTocContent && (
         <>
           <div className="toc-section-row">

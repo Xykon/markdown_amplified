@@ -569,6 +569,13 @@ body {
 .sitemap-link.is-root.is-current {
   font-weight: 700;
 }
+.sitemap-link.sitemap-siteroot {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.sitemap-link.sitemap-siteroot:hover {
+  color: var(--link);
+}
 
 .sitemap-children {
   /* children inherit indentation from depth classes */
@@ -2438,6 +2445,18 @@ html[data-theme='dark'] .sec-icon.sec-red   { color: #ff7b72; }
   gap: 4px;
   flex: 1;
   min-width: 160px;
+}
+
+.admin-sec-group-header {
+  flex-basis: 100%;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
 }
 
 .admin-sec-date-row {

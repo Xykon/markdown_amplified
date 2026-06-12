@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findIndexFile, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadGlobalDisplayConfig, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findIndexFile, findDisplayConfig, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -38,7 +38,7 @@ export default async function MarkdownPage({ params }) {
     ? requested
     : null  // Will be determined after loading rules and config
 
-  const [rules, globalHome, globalToc, globalIndexFile, cookieConfig, globalSiteHeader] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadCookieConfig(), loadGlobalSiteHeader()])
+  const [rules, globalHome, globalToc, globalIndexFile, cookieConfig, globalSiteHeader, globalDisplayConfig] = await Promise.all([loadSecurityRules(), loadGlobalHome(), loadGlobalToc(), loadGlobalIndexFile(), loadCookieConfig(), loadGlobalSiteHeader(), loadGlobalDisplayConfig()])
 
   if (relativeFile === null) {
     // It's a directory, resolve the index filename
@@ -50,6 +50,7 @@ export default async function MarkdownPage({ params }) {
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
   const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(relativeFile, rules, globalSiteHeader)
+  const displayConfig = findDisplayConfig(relativeFile, rules, globalDisplayConfig)
 
   if (rule && !isWithinDateRange(rule)) notFound()
 
@@ -86,6 +87,7 @@ export default async function MarkdownPage({ params }) {
       hasDownload={isDownloadAllowed(rule)}
       homeUrl={homeUrl ?? undefined}
       tocOpen={tocOpen}
+      displayConfig={displayConfig}
       cookieConfig={cookieConfig ?? undefined}
       siteName={siteName}
       siteBanner={siteBanner ?? undefined}

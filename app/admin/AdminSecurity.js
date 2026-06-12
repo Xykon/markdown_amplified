@@ -26,20 +26,25 @@ function ruleToForm(rule = {}) {
     else if (rule.home === false) home = 'false'
     else if (typeof rule.home === 'string') { home = '_custom'; homeCustom = rule.home }
   }
+  const tri = v => v === true ? 'true' : v === false ? 'false' : ''
   return {
     match: rule.match || '',
     password: '',
     removePassword: false,
     validFrom: rule.validFrom || '',
     validUntil: rule.validUntil || '',
-    download: rule.download === true ? 'true' : rule.download === false ? 'false' : '',
+    download: tri(rule.download),
     home, homeCustom,
-    toc: rule.toc === true ? 'true' : rule.toc === false ? 'false' : '',
+    toc: tri(rule.toc),
+    indexFile: rule.indexFile || '',
     name: rule.name || '',
     banner: rule.banner || '',
     bannerLight: rule.bannerLight || '',
     bannerDark: rule.bannerDark || '',
-    indexFile: rule.indexFile || '',
+    show_toc:              tri(rule.show_toc),
+    show_sitemap:          tri(rule.show_sitemap),
+    show_sitemap_first:    tri(rule.show_sitemap_first),
+    show_sitemap_siteroot: tri(rule.show_sitemap_siteroot),
   }
 }
 
@@ -58,11 +63,19 @@ function formToRule(form, existingRule = {}) {
   else if (form.home === '_custom' && form.homeCustom) rule.home = form.homeCustom
   if (form.toc === 'true') rule.toc = true
   else if (form.toc === 'false') rule.toc = false
+  if (form.indexFile) rule.indexFile = form.indexFile
   if (form.name) rule.name = form.name
   if (form.banner) rule.banner = form.banner
   if (form.bannerLight) rule.bannerLight = form.bannerLight
   if (form.bannerDark) rule.bannerDark = form.bannerDark
-  if (form.indexFile) rule.indexFile = form.indexFile
+  const setBool = (k) => {
+    if (form[k] === 'true') rule[k] = true
+    else if (form[k] === 'false') rule[k] = false
+  }
+  setBool('show_toc')
+  setBool('show_sitemap')
+  setBool('show_sitemap_first')
+  setBool('show_sitemap_siteroot')
   return rule
 }
 
@@ -149,6 +162,43 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Index file</label>
           <input className="admin-input admin-input-sm" value={form.indexFile} onChange={e => set('indexFile', e.target.value)} disabled={disabled} placeholder="e.g., README.md or index.md" />
+        </div>
+
+        <div className="admin-sec-group-header">Navigation display</div>
+
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Show ToC</label>
+          <select className="admin-input admin-input-sm" value={form.show_toc} onChange={e => set('show_toc', e.target.value)} disabled={disabled}>
+            <option value="">Default (shown)</option>
+            <option value="true">Always show</option>
+            <option value="false">Hide completely</option>
+          </select>
+          <p className="admin-field-help">Disabling hides the ToC panel entirely, not just its default open/closed state.</p>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Show site map</label>
+          <select className="admin-input admin-input-sm" value={form.show_sitemap} onChange={e => set('show_sitemap', e.target.value)} disabled={disabled}>
+            <option value="">Default (shown)</option>
+            <option value="true">Always show</option>
+            <option value="false">Hide completely</option>
+          </select>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Site map position</label>
+          <select className="admin-input admin-input-sm" value={form.show_sitemap_first} onChange={e => set('show_sitemap_first', e.target.value)} disabled={disabled}>
+            <option value="">Default (below ToC)</option>
+            <option value="true">Above ToC</option>
+            <option value="false">Below ToC</option>
+          </select>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Site root link</label>
+          <select className="admin-input admin-input-sm" value={form.show_sitemap_siteroot} onChange={e => set('show_sitemap_siteroot', e.target.value)} disabled={disabled}>
+            <option value="">Default (hidden)</option>
+            <option value="true">Show link to site root</option>
+            <option value="false">Hide</option>
+          </select>
+          <p className="admin-field-help">Adds a "↑ Site Root" link above the Home entry when the site map starts at a subfolder.</p>
         </div>
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Custom name</label>

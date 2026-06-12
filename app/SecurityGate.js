@@ -98,7 +98,7 @@ function CalendarIcon() {
 // - content: plaintext markdown for date-only pages, null for password-protected pages
 // - hasDownload: whether the download button is shown (mirrors the downloads route)
 // After any gate is cleared, delegates to MarkdownShell for normal rendering.
-export default function SecurityGate({ slug, resolvedFile, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function SecurityGate({ slug, resolvedFile, content, encrypted, validFrom, validUntil, hasDownload, homeUrl, tocOpen, displayConfig, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const [phase, setPhase] = useState('init')
   const [resolvedContent, setResolvedContent] = useState(content)
   const [password, setPassword] = useState('')
@@ -182,7 +182,7 @@ export default function SecurityGate({ slug, resolvedFile, content, encrypted, v
   if (phase === 'init') return null
 
   if (phase === 'open') {
-    return <MarkdownShell slug={slug} resolvedFile={resolvedFile} content={resolvedContent} hasDownload={hasDownload} homeUrl={homeUrl} tocOpen={tocOpen} cookieConfig={cookieConfig} siteName={siteName} siteBanner={siteBanner} siteBannerLight={siteBannerLight} siteBannerDark={siteBannerDark} siteButton={siteButton} />
+    return <MarkdownShell slug={slug} resolvedFile={resolvedFile} content={resolvedContent} hasDownload={hasDownload} homeUrl={homeUrl} tocOpen={tocOpen} displayConfig={displayConfig} cookieConfig={cookieConfig} siteName={siteName} siteBanner={siteBanner} siteBannerLight={siteBannerLight} siteBannerDark={siteBannerDark} siteButton={siteButton} />
   }
 
   if (phase === 'date-locked') {

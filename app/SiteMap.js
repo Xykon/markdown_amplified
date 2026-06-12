@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 // Two usage modes:
 //   hidden  — fetch data and report it via onLoad; renders nothing
 //   visible — receive pre-fetched tree prop and render it
-export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidden }) {
+export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidden, showSiteroot }) {
   const [tree, setTree] = useState(externalTree ?? null)
   const [sectionOpen, setSectionOpen] = useState(true)
 
@@ -47,6 +47,12 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
       </div>
       {sectionOpen && (
         <div className="sitemap-tree">
+          {showSiteroot && tree.rootHref && tree.rootHref !== '/' && (
+            <div className="sitemap-row sitemap-depth-0">
+              <span className="sitemap-toggle-placeholder" />
+              <a href="/" className="sitemap-link sitemap-siteroot">↑ Site Root</a>
+            </div>
+          )}
           <SiteMapNode node={tree} current={resolvedFile} depth={0} />
         </div>
       )}
