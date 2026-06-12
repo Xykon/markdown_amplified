@@ -303,17 +303,26 @@ body {
   display: none;
 }
 
+/* Row that holds the section-collapse button + expand-all button */
+.toc-section-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Shared section header style used for ToC and SiteMap collapse toggles */
 .toc-section-header {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  min-width: 0;
   background: none;
   border: none;
-  padding: 0 0 8px 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 0;
   cursor: pointer;
   font-size: 0.85em;
   font-weight: 600;
@@ -329,6 +338,23 @@ body {
   font-size: 0.75em;
   margin-left: 4px;
   flex-shrink: 0;
+}
+
+/* Expand/collapse all button — sits beside the section header */
+.toc-expand-all {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.6em;
+  line-height: 1;
+  border-radius: 3px;
+}
+.toc-expand-all:hover {
+  color: var(--text);
+  background: var(--surface-soft);
 }
 
 /* Keep the non-interactive header style for any other uses */

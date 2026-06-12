@@ -35,14 +35,16 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
   return (
     <>
       <div className="sitemap-divider" />
-      <button
-        className="toc-section-header"
-        onClick={() => setSectionOpen(o => !o)}
-        aria-expanded={sectionOpen}
-      >
-        <span>Site Map</span>
-        <span className="toc-section-chevron">{sectionOpen ? '▾' : '▸'}</span>
-      </button>
+      <div className="toc-section-row">
+        <button
+          className="toc-section-header"
+          onClick={() => setSectionOpen(o => !o)}
+          aria-expanded={sectionOpen}
+        >
+          <span>Site Map</span>
+          <span className="toc-section-chevron">{sectionOpen ? '▾' : '▸'}</span>
+        </button>
+      </div>
       {sectionOpen && (
         <div className="sitemap-tree">
           <SiteMapNode node={tree} current={resolvedFile} depth={0} />

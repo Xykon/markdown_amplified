@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-// Build a two-level tree: h1/h2 at root, h3 nested under nearest parent.
-// We only display up to h3 so the tree is at most 2 levels deep.
 function buildTree(headings) {
   const roots = []
   let lastRoot = null
@@ -13,21 +11,17 @@ function buildTree(headings) {
       roots.push(node)
       lastRoot = node
     } else {
-      // h3 → child of nearest h1/h2
       const node = { ...h, children: [] }
-      if (lastRoot) {
-        lastRoot.children.push(node)
-      } else {
-        roots.push(node)
-      }
+      if (lastRoot) lastRoot.children.push(node)
+      else roots.push(node)
     }
   }
   return roots
 }
 
-function TocNode({ node, activeId, linkRefs, onNavigate }) {
+function TocNode({ node, activeId, linkRefs, onNavigate, defaultOpen }) {
   const hasChildren = node.children.length > 0
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(defaultOpen ?? false)
 
   return (
     <li className={`toc-item toc-level-${node.level}`}>
@@ -68,6 +62,7 @@ function TocNode({ node, activeId, linkRefs, onNavigate }) {
               activeId={activeId}
               linkRefs={linkRefs}
               onNavigate={onNavigate}
+              defaultOpen={defaultOpen}
             />
           ))}
         </ul>
@@ -80,6 +75,9 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
   const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [tocSectionOpen, setTocSectionOpen] = useState(true)
+  // treeKey: bump to remount all TocNodes (resets individual open state to nodeDefault)
+  const [treeKey, setTreeKey] = useState(0)
+  const [nodeDefault, setNodeDefault] = useState(false)
   const linkRefs = useRef(new Map())
 
   useEffect(() => {
@@ -151,6 +149,10 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
   const tocHeadings = headings.filter(h => h.level <= 3)
   const hasTocContent = tocHeadings.length > 0
   const tree = hasTocContent ? buildTree(tocHeadings) : []
+  const hasCollapsibleNodes = tree.some(n => n.children.length > 0)
+
+  const expandAll = () => { setNodeDefault(true); setTreeKey(k => k + 1) }
+  const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
 
   if (!hasTocContent && !children) return null
 
@@ -158,16 +160,27 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
     <nav className={`table-of-contents ${isOpen ? 'is-open' : 'is-closed'}`}>
       {hasTocContent && (
         <>
-          <button
-            className="toc-section-header"
-            onClick={() => setTocSectionOpen(o => !o)}
-            aria-expanded={tocSectionOpen}
-          >
-            <span>Table of Contents</span>
-            <span className="toc-section-chevron">{tocSectionOpen ? '▾' : '▸'}</span>
-          </button>
+          <div className="toc-section-row">
+            <button
+              className="toc-section-header"
+              onClick={() => setTocSectionOpen(o => !o)}
+              aria-expanded={tocSectionOpen}
+            >
+              <span>Table of Contents</span>
+              <span className="toc-section-chevron">{tocSectionOpen ? '▾' : '▸'}</span>
+            </button>
+            {tocSectionOpen && hasCollapsibleNodes && (
+              <button
+                className="toc-expand-all"
+                onClick={nodeDefault ? collapseAll : expandAll}
+                title={nodeDefault ? 'Collapse all' : 'Expand all'}
+              >
+                {nodeDefault ? '▸▸' : '▾▾'}
+              </button>
+            )}
+          </div>
           {tocSectionOpen && (
-            <ul className="toc-list">
+            <ul className="toc-list" key={treeKey}>
               {tree.map(node => (
                 <TocNode
                   key={node.id}
@@ -175,6 +188,7 @@ export default function TableOfContents({ content, isOpen = true, onNavigate, ch
                   activeId={activeId}
                   linkRefs={linkRefs}
                   onNavigate={onNavigate}
+                  defaultOpen={nodeDefault}
                 />
               ))}
             </ul>
