@@ -3,41 +3,161 @@
 import { useEffect, useState } from 'react'
 
 const CONSENT_KEY = 'ma_cookie_consent'
+const CONSENT_DATA_KEY = 'ma_cookie_consent_data'
 
 export default function CookieBanner({ privacyUrl, privacyLabel }) {
-  const [visible, setVisible] = useState(false)
+  const [decided, setDecided] = useState(true)
+  const [bannerVisible, setBannerVisible] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [analyticsChecked, setAnalyticsChecked] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem(CONSENT_KEY)) setVisible(true)
+    let hasDecided = false
+    try {
+      hasDecided = localStorage.getItem(CONSENT_KEY) !== null
+    } catch (e) {}
+    if (hasDecided) return
+
+    setDecided(false)
+
+    const onScroll = () => {
+      setBannerVisible(true)
+      window.removeEventListener('scroll', onScroll)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function accept() {
-    localStorage.setItem(CONSENT_KEY, 'granted')
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem(CONSENT_DATA_KEY)) } catch (e) { return null }
+  }
+
+  function saveAndApply(analytics) {
+    try {
+      localStorage.setItem(CONSENT_DATA_KEY, JSON.stringify({ necessary: true, analytics }))
+      localStorage.setItem(CONSENT_KEY, analytics ? 'granted' : 'denied')
+    } catch (e) {}
+    window.sgwCookieConsent = analytics ? 'granted' : 'denied'
     if (typeof window.gtag === 'function') {
-      window.gtag('consent', 'update', { analytics_storage: 'granted' })
+      if (analytics) {
+        window.gtag('consent', 'update', { analytics_storage: 'granted' })
+        window.gtag('event', 'page_view')
+      } else {
+        window.gtag('consent', 'update', { analytics_storage: 'denied' })
+      }
     }
-    setVisible(false)
+  }
+
+  function hideBanner() {
+    setBannerVisible(false)
+    setTimeout(() => setDecided(true), 500)
+  }
+
+  function accept() {
+    saveAndApply(true)
+    hideBanner()
   }
 
   function decline() {
-    localStorage.setItem(CONSENT_KEY, 'denied')
-    setVisible(false)
+    saveAndApply(false)
+    hideBanner()
   }
 
-  if (!visible) return null
+  function openModal() {
+    const prefs = loadPrefs()
+    setAnalyticsChecked(prefs ? prefs.analytics : false)
+    setShowModal(true)
+  }
+
+  function saveModal() {
+    saveAndApply(analyticsChecked)
+    setShowModal(false)
+    hideBanner()
+  }
+
+  if (decided) return null
 
   return (
-    <div className="cookie-banner" role="dialog" aria-label="Cookie consent">
-      <p className="cookie-banner-text">
-        We use analytics cookies to understand how visitors use this site.
-        {privacyUrl && (
-          <> See our <a href={privacyUrl} target="_blank" rel="noopener noreferrer">{privacyLabel}</a>.</>
-        )}
-      </p>
-      <div className="cookie-banner-actions">
-        <button className="cookie-btn cookie-btn-secondary" onClick={decline}>Decline</button>
-        <button className="cookie-btn cookie-btn-primary" onClick={accept}>Accept</button>
+    <>
+      <div className={`sgw-cookie-backdrop${bannerVisible ? ' visible' : ''}`} />
+
+      <div
+        className={`sgw-cookie-banner${bannerVisible ? ' sgw-cookie-banner--visible' : ''}`}
+        role="region"
+        aria-label="Cookie consent"
+      >
+        <div className="sgw-cookie-inner">
+          <div className="sgw-cookie-content">
+            <div className="sgw-cookie-text-wrap">
+              <h2 className="sgw-cookie-heading">This website uses cookies</h2>
+              <p className="sgw-cookie-text">We use cookies to improve your experience and to provide us with insight into how people use our website</p>
+              {privacyUrl && (
+                <p className="sgw-cookie-text">
+                  To find out more, read our <a href={privacyUrl} target="_blank" rel="noopener noreferrer">{privacyLabel || 'cookies policy'}</a>
+                </p>
+              )}
+            </div>
+            <div className="sgw-cookie-btns">
+              <button className="sgw-cookie-btn sgw-cookie-accept" onClick={accept}>Accept</button>
+              <button className="sgw-cookie-btn sgw-cookie-outline" onClick={decline}>Reject</button>
+              <button className="sgw-cookie-btn sgw-cookie-outline" onClick={openModal}>Manage cookie preferences</button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {showModal && (
+        <div
+          className="sgw-cookie-modal-bg visible"
+          role="dialog"
+          aria-label="Cookie preferences"
+          aria-modal="true"
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+        >
+          <div className="sgw-cookie-modal">
+            <button className="sgw-modal-close-btn" aria-label="Close" onClick={() => setShowModal(false)} />
+            <h2 className="sgw-modal-title">Cookie preferences</h2>
+            <p className="sgw-modal-intro">
+              Cookies are tiny pieces of data stored on your device which can enable certain website
+              functionality and collect information about how you use websites.
+              {privacyUrl && (
+                <> To find out more, read our{' '}
+                  <a href={privacyUrl} target="_blank" rel="noopener noreferrer">{privacyLabel || 'cookies policy'}</a>.
+                </>
+              )}{' '}
+              You can manage which types of cookies to accept below.
+            </p>
+
+            <div className="sgw-toggle-wrap">
+              <label className="sgw-toggle-label">
+                <input type="checkbox" defaultChecked disabled />
+                <span className="sgw-toggle-track" />
+              </label>
+              <div className="sgw-toggle-info">
+                <p className="sgw-toggle-title">Strictly necessary cookies</p>
+                <p className="sgw-toggle-desc">These cookies are essential to the operation of this website and help provide basic functionality such as navigation and language support.</p>
+              </div>
+            </div>
+
+            <div className="sgw-toggle-wrap">
+              <label className="sgw-toggle-label">
+                <input
+                  type="checkbox"
+                  checked={analyticsChecked}
+                  onChange={e => setAnalyticsChecked(e.target.checked)}
+                />
+                <span className="sgw-toggle-track" />
+              </label>
+              <div className="sgw-toggle-info">
+                <p className="sgw-toggle-title">Analytical cookies</p>
+                <p className="sgw-toggle-desc">These cookies help us improve the performance of this website by giving us anonymised information about how you interact with it.</p>
+              </div>
+            </div>
+
+            <button className="sgw-modal-save-btn" onClick={saveModal}>Save preferences</button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
