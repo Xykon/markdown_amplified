@@ -68,7 +68,7 @@ function formToRule(form, existingRule = {}) {
 
 // ── Inline edit form ──────────────────────────────────────────────────────────
 
-function RuleEditForm({ rule, onSave, onCancel, disabled }) {
+function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
   const [form, setForm] = useState(() => ruleToForm(rule))
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -80,6 +80,12 @@ function RuleEditForm({ rule, onSave, onCancel, disabled }) {
 
   return (
     <form onSubmit={handleSubmit} className="admin-sec-edit-form">
+      {isNewRule && (
+        <div className="admin-sec-wizard-header">
+          <span className="admin-sec-wizard-badge">Step 2 of 2</span>
+          <span className="admin-sec-wizard-label">Configure rule options</span>
+        </div>
+      )}
       <div className="admin-sec-edit-fields">
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Match</label>
@@ -262,7 +268,10 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
 
   return (
     <form onSubmit={handleSubmit} className="admin-sec-edit-form">
-      <h4 className="admin-sec-add-title">New rule</h4>
+      <div className="admin-sec-wizard-header">
+        <span className="admin-sec-wizard-badge">Step 1 of 2</span>
+        <span className="admin-sec-wizard-label">Choose target file or folder</span>
+      </div>
       <div className="admin-sec-edit-fields">
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Folder</label>
@@ -293,32 +302,11 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
           <label className="admin-field-label">Password</label>
           <input className="admin-input admin-input-sm" type="password" value={form.password} onChange={e => set('password', e.target.value)} autoComplete="new-password" placeholder="Leave blank for no password" />
         </div>
-        <div className="admin-sec-edit-group">
-          <label className="admin-field-label">Date range</label>
-          <div className="admin-sec-date-row">
-            <div>
-              <label className="admin-field-label-sm">From</label>
-              <input className="admin-input admin-input-sm" type="date" value={form.validFrom} onChange={e => set('validFrom', e.target.value)} />
-            </div>
-            <div>
-              <label className="admin-field-label-sm">Until</label>
-              <input className="admin-input admin-input-sm" type="date" value={form.validUntil} onChange={e => set('validUntil', e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <div className="admin-sec-edit-group">
-          <label className="admin-field-label">Download</label>
-          <select className="admin-input admin-input-sm" value={form.download} onChange={e => set('download', e.target.value)}>
-            <option value="">Default</option>
-            <option value="true">Always allowed</option>
-            <option value="false">Always blocked</option>
-          </select>
-        </div>
       </div>
       {match && <code className="admin-sec-match-preview">match: {match}</code>}
       <div className="admin-sec-form-actions">
         <button type="button" className="admin-btn" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="admin-btn admin-btn-primary" disabled={!match.trim()}>Add rule</button>
+        <button type="submit" className="admin-btn admin-btn-primary" disabled={!match.trim()}>Next →</button>
       </div>
     </form>
   )
@@ -332,6 +320,7 @@ export default function AdminSecurity({ readonly, onLogout, folderPrefetch }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState(null)
+  const [newlyAddedIdx, setNewlyAddedIdx] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -387,16 +376,18 @@ export default function AdminSecurity({ readonly, onLogout, folderPrefetch }) {
 
   async function handleSaveRule(idx, updated) {
     const ok = await saveRules(rules.map((r, i) => i === idx ? updated : r))
-    if (ok) { setStatus('Rule saved'); setExpandedIdx(null) }
+    if (ok) { setStatus('Rule saved'); setExpandedIdx(null); setNewlyAddedIdx(null) }
   }
 
   async function handleAddRule(newRule) {
+    const newIdx = rules.length
     const ok = await saveRules([...rules, newRule])
-    if (ok) { setStatus(`Added rule "${newRule.match}"`); setShowAddForm(false) }
+    if (ok) { setShowAddForm(false); setExpandedIdx(newIdx); setNewlyAddedIdx(newIdx) }
   }
 
   function toggleExpanded(idx) {
     setExpandedIdx(v => v === idx ? null : idx)
+    setNewlyAddedIdx(null)
     setShowAddForm(false)
   }
 
@@ -481,7 +472,7 @@ export default function AdminSecurity({ readonly, onLogout, folderPrefetch }) {
               isExpanded && (
                 <tr key={`edit-${idx}`} className="admin-sec-edit-row">
                   <td colSpan={colCount} className="admin-sec-edit-cell">
-                    <RuleEditForm rule={rule} onSave={updated => handleSaveRule(idx, updated)} onCancel={() => setExpandedIdx(null)} disabled={readonly || saving} />
+                    <RuleEditForm rule={rule} onSave={updated => handleSaveRule(idx, updated)} onCancel={() => { setExpandedIdx(null); setNewlyAddedIdx(null) }} disabled={readonly || saving} isNewRule={idx === newlyAddedIdx} />
                   </td>
                 </tr>
               ),
