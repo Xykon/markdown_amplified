@@ -21,7 +21,7 @@ function SiteButtonEl({ siteButton, theme }) {
   return <span className="header-button">{img}</span>
 }
 
-export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = false, onToggleToc, hasSiteMap = false, siteMapOpen = false, onToggleSiteMap, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = false, onToggleToc, hasSiteMap = false, siteMapOpen = false, onToggleSiteMap, hasSiteRootButton = false, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
   const [bannerError, setBannerError] = useState(false)
@@ -123,6 +123,23 @@ export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = f
         <div className="header-left">
           {siteBtn && sbPlacement === 'left' && sbAlignment !== 'right' && siteBtn}
           {siteBtn && sbPlacement === 'left' && sbAlignment === 'right' && siteBtn}
+          {hasSiteRootButton && (
+            <a
+              className="header-button siteroot-button"
+              href="/"
+              title="Site root"
+              aria-label="Go to site root"
+              onClick={() => sessionStorage.setItem('md-nav-home', '1')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9" />
+                <path d="M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9" />
+                <line x1="3.6" y1="9" x2="20.4" y2="9" />
+                <line x1="3.6" y1="15" x2="20.4" y2="15" />
+              </svg>
+            </a>
+          )}
           {homeUrl && (
             <a
               className="header-button home-button"

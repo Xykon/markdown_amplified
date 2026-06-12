@@ -13,7 +13,11 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
     sitemapOpen: sitemapOpenDefault = false,
     showSitemapFirst = false,
     showSitemapSiteroot = false,
+    showSiteroot = false,
   } = displayConfig ?? {}
+
+  // Show the site-root button only when enabled AND home isn't already the root
+  const hasSiterootButton = showSiteroot && homeUrl !== '/'
 
   const hasTocContent = useMemo(
     () => showToc && /^(#{1,3})\s+.+$/m.test(content),
@@ -72,6 +76,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
         hasSiteMap={showSitemap}
         siteMapOpen={siteMapIsOpen}
         onToggleSiteMap={() => toggleSection('sitemap')}
+        hasSiteRootButton={hasSiterootButton}
         homeUrl={homeUrl}
         siteName={siteName}
         siteBanner={siteBanner}

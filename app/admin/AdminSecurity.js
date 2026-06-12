@@ -46,6 +46,7 @@ function ruleToForm(rule = {}) {
     show_sitemap:          tri(rule.show_sitemap),
     show_sitemap_first:    tri(rule.show_sitemap_first),
     show_sitemap_siteroot: tri(rule.show_sitemap_siteroot),
+    show_siteroot:         tri(rule.show_siteroot),
   }
 }
 
@@ -79,6 +80,7 @@ function formToRule(form, existingRule = {}) {
   setBool('show_sitemap')
   setBool('show_sitemap_first')
   setBool('show_sitemap_siteroot')
+  setBool('show_siteroot')
   return rule
 }
 
@@ -203,13 +205,22 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
           </select>
         </div>
         <div className="admin-sec-edit-group">
-          <label className="admin-field-label">Site root link</label>
+          <label className="admin-field-label">Site root link in map</label>
           <select className="admin-input admin-input-sm" value={form.show_sitemap_siteroot} onChange={e => set('show_sitemap_siteroot', e.target.value)} disabled={disabled}>
             <option value="">Default (hidden)</option>
             <option value="true">Show link to site root</option>
             <option value="false">Hide</option>
           </select>
           <p className="admin-field-help">Adds a "↑ Site Root" link above the Home entry when the site map starts at a subfolder.</p>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Site root button</label>
+          <select className="admin-input admin-input-sm" value={form.show_siteroot} onChange={e => set('show_siteroot', e.target.value)} disabled={disabled}>
+            <option value="">Default (hidden)</option>
+            <option value="true">Show in header</option>
+            <option value="false">Hide</option>
+          </select>
+          <p className="admin-field-help">Globe button in the header that navigates to the site root. Hidden automatically when home already points to the root.</p>
         </div>
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Custom name</label>
