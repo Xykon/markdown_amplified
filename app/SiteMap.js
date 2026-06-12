@@ -9,10 +9,13 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
   const [tree, setTree] = useState(externalTree ?? null)
   const [sectionOpen, setSectionOpen] = useState(true)
 
-  // Fetch mode: when hidden=true we fetch once and report the data upward
+  // Fetch mode: when hidden=true we fetch once and report the data upward.
+  // Pass the current file so the API can determine the correct BFS root
+  // (e.g. a folder with home:'folder' starts BFS from that folder's index).
   useEffect(() => {
     if (!hidden) return
-    fetch('/api/sitemap')
+    const param = resolvedFile ? `?file=${encodeURIComponent(resolvedFile)}` : ''
+    fetch(`/api/sitemap${param}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) { setTree(data); onLoad?.(data) } })
       .catch(() => {})
@@ -55,8 +58,8 @@ function SiteMapNode({ node, current, depth }) {
   const isRoot = depth === 0
   const [open, setOpen] = useState(depth < 2)
 
-  // Root index maps to the canonical home URL
-  const href = isRoot ? '/' : `/${node.path}`
+  // Root node uses the home URL returned by the API (respects 'folder' and custom home rules)
+  const href = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
 
   const linkClass = [
     'sitemap-link',
