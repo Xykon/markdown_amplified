@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { authHeaders } from './adminApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -167,8 +167,9 @@ function RuleEditForm({ rule, onSave, onCancel, disabled }) {
 
 // ── Add rule form ─────────────────────────────────────────────────────────────
 
-function AddRuleForm({ onAdd, onCancel, onLogout }) {
-  const [folders, setFolders]           = useState(null)  // null = loading
+function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
+  const [folders, setFolders]           = useState(() => folderPrefetch?.folders ?? null)
+  const [foldersLoading, setFoldersLoading] = useState(() => folderPrefetch?.folders != null ? false : (folderPrefetch?.loading ?? false))
   const [files, setFiles]               = useState([])
   const [folderChoice, setFolderChoice] = useState('')    // '' = root, path = subfolder, '_custom' = manual
   const [folderCustom, setFolderCustom] = useState('')
@@ -176,10 +177,24 @@ function AddRuleForm({ onAdd, onCancel, onLogout }) {
   const [fileCustom, setFileCustom]     = useState('')
   const [form, setForm]                 = useState(() => ruleToForm({}))
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const foldersTriggered = useRef(folderPrefetch != null)  // skip lazy BFS if prefetch was initiated
+  const cancelRef = useRef(false)
 
-  // BFS fetch of all sub-folders on mount, max depth 4
+  useEffect(() => () => { cancelRef.current = true }, [])
+
+  // Pick up prefetch result arriving after this form mounted
   useEffect(() => {
-    let cancelled = false
+    if (folderPrefetch?.folders != null) {
+      setFolders(prev => prev ?? folderPrefetch.folders)
+      setFoldersLoading(false)
+    }
+  }, [folderPrefetch])
+
+  // BFS fetch of all sub-folders, max depth 4 — triggered lazily on first interaction (fallback when no prefetch)
+  function triggerFolderLoad() {
+    if (foldersTriggered.current) return
+    foldersTriggered.current = true
+    setFoldersLoading(true)
     async function loadFolders() {
       const result = []
       const queue = [{ path: '', depth: 0 }]
@@ -198,11 +213,10 @@ function AddRuleForm({ onAdd, onCancel, onLogout }) {
           }
         } catch { break }
       }
-      if (!cancelled) setFolders(result)
+      if (!cancelRef.current) { setFolders(result); setFoldersLoading(false) }
     }
     loadFolders()
-    return () => { cancelled = true }
-  }, [onLogout])
+  }
 
   // Fetch files for the selected folder when it changes
   useEffect(() => {
@@ -252,8 +266,8 @@ function AddRuleForm({ onAdd, onCancel, onLogout }) {
       <div className="admin-sec-edit-fields">
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Folder</label>
-          <select className="admin-input admin-input-sm" value={folderChoice} onChange={e => handleFolderChange(e.target.value)} disabled={folders === null}>
-            <option value="">— root folder —</option>
+          <select className="admin-input admin-input-sm" value={folderChoice} onChange={e => handleFolderChange(e.target.value)} onMouseDown={triggerFolderLoad} onFocus={triggerFolderLoad}>
+            <option value="">{foldersLoading ? 'Loading, please wait…' : '— root folder —'}</option>
             {(folders || []).map(f => <option key={f} value={f}>{f}/</option>)}
             <option value="_custom">Type manually…</option>
           </select>
@@ -312,7 +326,7 @@ function AddRuleForm({ onAdd, onCancel, onLogout }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function AdminSecurity({ readonly, onLogout }) {
+export default function AdminSecurity({ readonly, onLogout, folderPrefetch }) {
   const [config, setConfig] = useState(null)
   const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
@@ -478,7 +492,7 @@ export default function AdminSecurity({ readonly, onLogout }) {
           <tfoot>
             <tr>
               <td colSpan={colCount} className="admin-sec-edit-cell" style={{ borderTop: '2px solid var(--border)' }}>
-                <AddRuleForm onAdd={handleAddRule} onCancel={() => setShowAddForm(false)} onLogout={onLogout} />
+                <AddRuleForm onAdd={handleAddRule} onCancel={() => setShowAddForm(false)} onLogout={onLogout} folderPrefetch={folderPrefetch} />
               </td>
             </tr>
           </tfoot>

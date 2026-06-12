@@ -622,6 +622,8 @@ export default function AdminShell({ cookieConfig }) {
   const [authed, setAuthed]     = useState(null)
   const [readonly, setReadonly] = useState(false)
   const [tab, setTab]           = useState('files')
+  const folderPrefetchStarted   = useRef(false)
+  const [folderPrefetch, setFolderPrefetch] = useState(null)
 
   useEffect(() => {
     let token = getToken()
@@ -642,6 +644,35 @@ export default function AdminShell({ cookieConfig }) {
       .catch(() => { setReadonly(getStoredReadonly()); setAuthed(true) })
   }, [])
 
+  // BFS folder prefetch — runs after login so data is ready before the user opens Security > New rule
+  useEffect(() => {
+    if (!authed || readonly || folderPrefetchStarted.current) return
+    folderPrefetchStarted.current = true
+    setFolderPrefetch({ loading: true, folders: null })
+    let cancelled = false
+    async function loadFolders() {
+      const result = []
+      const queue = [{ path: '', depth: 0 }]
+      while (queue.length > 0) {
+        const { path, depth } = queue.shift()
+        if (depth > 4) continue
+        try {
+          const res = await fetch(`/api/admin/files?path=${encodeURIComponent(path)}`, { headers: authHeaders() })
+          if (!res.ok) continue
+          const data = await res.json()
+          for (const dir of (data.dirs || [])) {
+            const full = path ? `${path}/${dir.name}` : dir.name
+            result.push(full)
+            queue.push({ path: full, depth: depth + 1 })
+          }
+        } catch { break }
+      }
+      if (!cancelled) setFolderPrefetch({ loading: false, folders: result })
+    }
+    loadFolders()
+    return () => { cancelled = true }
+  }, [authed, readonly])
+
   function handleLogin(token, ro) {
     setToken(token)
     setStoredReadonly(ro)
@@ -653,6 +684,8 @@ export default function AdminShell({ cookieConfig }) {
   function handleLogout() {
     clearToken(cookieConfig)
     setAuthed(false)
+    folderPrefetchStarted.current = false
+    setFolderPrefetch(null)
   }
 
   if (authed === null) return null
@@ -671,7 +704,7 @@ export default function AdminShell({ cookieConfig }) {
       </div>
       {tab === 'settings' && <AdminSettings readonly={readonly} onLogout={handleLogout} />}
       {tab === 'files'    && <FileBrowser readonly={readonly} onLogout={handleLogout} cookieConfig={cookieConfig} />}
-      {tab === 'security' && <AdminSecurity readonly={readonly} onLogout={handleLogout} />}
+      {tab === 'security' && <AdminSecurity readonly={readonly} onLogout={handleLogout} folderPrefetch={folderPrefetch} />}
     </div>
   )
 }
