@@ -593,6 +593,38 @@ body {
   /* children inherit indentation from depth classes */
 }
 
+.sitemap-loading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px;
+  color: var(--muted);
+  font-size: 0.82em;
+}
+
+.sitemap-loading-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  animation: sitemap-dot-pulse 1.2s ease-in-out infinite;
+}
+.sitemap-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.sitemap-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes sitemap-dot-pulse {
+  0%, 80%, 100% { transform: scale(0.5); opacity: 0.35; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+.sitemap-empty {
+  font-size: 0.82em;
+  color: var(--muted);
+  padding: 6px 2px;
+  margin: 0;
+}
+
 .markdown-body {
   flex: 1;
   min-width: 0;

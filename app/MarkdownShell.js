@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Header from './Header'
 import TableOfContents from './TableOfContents'
 import MarkdownRenderer from './[...slug]/MarkdownRenderer'
@@ -11,6 +11,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
     showToc = true,
     showSitemap = true,
     sitemapOpen: sitemapOpenDefault = false,
+    showSitemapFirst = false,
     showSitemapSiteroot = false,
   } = displayConfig ?? {}
 
@@ -19,41 +20,25 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
     [content, showToc]
   )
 
-  const [siteMapTree, setSiteMapTree] = useState(null)
-  const canShowSiteMap = showSitemap && siteMapTree !== null
-
-  // openSections: ordered array — earlier = higher in sidebar.
+  // openSections: ordered array — earlier index = higher in sidebar.
   // Order tracks which section the user opened first.
   const [openSections, setOpenSections] = useState(() => {
+    const toc = hasTocContent && tocOpenDefault
+    const sm  = sitemapOpenDefault && showSitemap
     const initial = []
-    if (hasTocContent && tocOpenDefault) initial.push('toc')
-    // 'sitemap' deferred until tree loads; see useEffect below
+    if (showSitemapFirst) {
+      if (sm)  initial.push('sitemap')
+      if (toc) initial.push('toc')
+    } else {
+      if (toc) initial.push('toc')
+      if (sm)  initial.push('sitemap')
+    }
     return initial
   })
 
-  const sitemapDefaultApplied = useRef(false)
-
-  // When the site map tree loads, auto-open if configured to do so.
-  useEffect(() => {
-    if (!siteMapTree || sitemapDefaultApplied.current) return
-    sitemapDefaultApplied.current = true
-    if (!sitemapOpenDefault) return
-    setOpenSections(prev => {
-      if (prev.includes('sitemap')) return prev
-      // Respect showSitemapFirst: sitemap above toc
-      const hasToc = prev.includes('toc')
-      if (hasToc) {
-        // Insert sitemap before toc in list (visually first = earlier in array)
-        // But we don't have showSitemapFirst here without a ref — default: append
-        return [...prev, 'sitemap']
-      }
-      return [...prev, 'sitemap']
-    })
-  }, [siteMapTree]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const tocIsOpen    = openSections.includes('toc')
+  const tocIsOpen     = openSections.includes('toc')
   const siteMapIsOpen = openSections.includes('sitemap')
-  const hasSidebar   = (tocIsOpen && hasTocContent) || (siteMapIsOpen && canShowSiteMap)
+  const hasSidebar    = (tocIsOpen && hasTocContent) || (siteMapIsOpen && showSitemap)
 
   const layoutClass = `page-layout ${hasSidebar ? 'with-toc' : 'no-toc'}`
 
@@ -84,7 +69,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
         hasToc={hasTocContent}
         tocOpen={tocIsOpen}
         onToggleToc={() => toggleSection('toc')}
-        hasSiteMap={canShowSiteMap}
+        hasSiteMap={showSitemap}
         siteMapOpen={siteMapIsOpen}
         onToggleSiteMap={() => toggleSection('sitemap')}
         homeUrl={homeUrl}
@@ -94,11 +79,6 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
         siteBannerDark={siteBannerDark}
         siteButton={siteButton}
       />
-
-      {/* Always mount hidden SiteMap so tree fetch happens in background */}
-      {showSitemap && (
-        <SiteMap resolvedFile={resolvedFile} onLoad={setSiteMapTree} hidden showSiteroot={showSitemapSiteroot} />
-      )}
 
       <div className={layoutClass}>
         {hasSidebar && (
@@ -110,9 +90,9 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
                     <TableOfContents key="toc" content={content} onNavigate={closeSidebarOnMobile} />
                   )
                 }
-                if (section === 'sitemap' && siteMapTree) {
+                if (section === 'sitemap' && showSitemap) {
                   return (
-                    <SiteMap key="sitemap" resolvedFile={resolvedFile} tree={siteMapTree} showSiteroot={showSitemapSiteroot} />
+                    <SiteMap key="sitemap" resolvedFile={resolvedFile} showSiteroot={showSitemapSiteroot} />
                   )
                 }
                 return null

@@ -46,6 +46,7 @@ function TocNode({ node, activeId, linkRefs, onNavigate, defaultOpen }) {
           className={`toc-link ${activeId === node.id ? 'active' : ''}`}
           onClick={(e) => {
             e.preventDefault()
+            if (hasChildren) setOpen(true)
             document.getElementById(node.id)?.scrollIntoView({ behavior: 'smooth' })
             onNavigate?.()
           }}

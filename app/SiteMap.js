@@ -2,40 +2,23 @@
 
 import { useEffect, useState } from 'react'
 
-// Two usage modes:
-//   hidden  — fetch data and report it via onLoad; renders nothing
-//   visible — receive pre-fetched tree prop and render it
-export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidden, showSiteroot }) {
-  const [tree, setTree] = useState(externalTree ?? null)
-  const [sectionOpen, setSectionOpen] = useState(true)
-  const [treeKey, setTreeKey] = useState(0)
-  const [nodeDefault, setNodeDefault] = useState(false)
+export default function SiteMap({ resolvedFile, showSiteroot }) {
+  const [tree,    setTree]    = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [sectionOpen,  setSectionOpen]  = useState(true)
+  const [treeKey,      setTreeKey]      = useState(0)
+  const [nodeDefault,  setNodeDefault]  = useState(false)
 
-  const expandAll  = () => { setNodeDefault(true);  setTreeKey(k => k + 1) }
-  const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
-
-  // Fetch mode: when hidden=true we fetch once and report the data upward.
-  // Pass the current file so the API can determine the correct BFS root
-  // (e.g. a folder with home:'folder' starts BFS from that folder's index).
   useEffect(() => {
-    if (!hidden) return
     const param = resolvedFile ? `?file=${encodeURIComponent(resolvedFile)}` : ''
     fetch(`/api/sitemap${param}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) { setTree(data); onLoad?.(data) } })
-      .catch(() => {})
+      .then(data => { setTree(data); setLoading(false) })
+      .catch(() => setLoading(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep in sync if parent passes a fresh tree prop (shouldn't change, but be safe)
-  useEffect(() => {
-    if (externalTree) setTree(externalTree)
-  }, [externalTree])
-
-  // Hidden mode: no visible output
-  if (hidden) return null
-
-  // Visible mode: render tree
-  if (!tree) return null
+  const expandAll   = () => { setNodeDefault(true);  setTreeKey(k => k + 1) }
+  const collapseAll = () => { setNodeDefault(false); setTreeKey(k => k + 1) }
 
   return (
     <div className="toc-card">
@@ -48,7 +31,7 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
           <span>Site Map</span>
           <span className="toc-section-chevron">{sectionOpen ? '▾' : '▸'}</span>
         </button>
-        {sectionOpen && tree.children?.length > 0 && (
+        {sectionOpen && !loading && tree?.children?.length > 0 && (
           <button
             className="toc-expand-all"
             onClick={nodeDefault ? collapseAll : expandAll}
@@ -58,25 +41,37 @@ export default function SiteMap({ resolvedFile, onLoad, tree: externalTree, hidd
           </button>
         )}
       </div>
+
       {sectionOpen && (
-        <div className="sitemap-tree" key={treeKey}>
-          <SiteMapNode
-            node={tree}
-            current={resolvedFile}
-            depth={0}
-            defaultOpen={nodeDefault}
-            showSiteroot={showSiteroot}
-          />
-        </div>
+        loading ? (
+          <div className="sitemap-loading">
+            <span className="sitemap-loading-dot" />
+            <span className="sitemap-loading-dot" />
+            <span className="sitemap-loading-dot" />
+            <span>Indexing…</span>
+          </div>
+        ) : tree ? (
+          <div className="sitemap-tree" key={treeKey}>
+            <SiteMapNode
+              node={tree}
+              current={resolvedFile}
+              depth={0}
+              defaultOpen={nodeDefault}
+              showSiteroot={showSiteroot}
+            />
+          </div>
+        ) : (
+          <p className="sitemap-empty">No content found.</p>
+        )
       )}
     </div>
   )
 }
 
 function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
-  const isCurrent = node.path === current
+  const isCurrent  = node.path === current
   const hasChildren = node.children?.length > 0
-  const isRoot = depth === 0
+  const isRoot     = depth === 0
   const [open, setOpen] = useState(defaultOpen ?? false)
 
   const href = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
@@ -84,10 +79,10 @@ function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
   const linkClass = [
     'sitemap-link',
     isCurrent ? 'is-current' : '',
-    isRoot ? 'is-root' : '',
+    isRoot    ? 'is-root'    : '',
   ].filter(Boolean).join(' ')
 
-  // Root node: not collapsible — Home row always shows, children always visible
+  // Root "Home" — not collapsible, children always visible
   if (isRoot) {
     return (
       <div className="sitemap-node">
@@ -114,7 +109,6 @@ function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
     )
   }
 
-  // Non-root nodes: collapsible if they have children
   return (
     <div className="sitemap-node">
       <div className={`sitemap-row sitemap-depth-${depth}`}>
