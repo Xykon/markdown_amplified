@@ -10,11 +10,14 @@ This project renders markdown documents from Amazon S3 or the `content/` directo
 - GitHub-style syntax highlighting (light and dark)
 - KaTeX math support
 - Mermaid diagrams with toolbar and fullscreen zoom
-- Table of contents sidebar with desktop/mobile toggle
+- Table of contents sidebar — collapsible tree, active heading tracking, desktop/mobile toggle
+- Site map sidebar — BFS-based content discovery, password-aware, shows loading state while indexing
 - Download button for source markdown files
 - Light/dark theme toggle with persistence
 - Per-file and per-directory security: password protection and date-range gating
-- Home button enabled by default, linking to site root — configurable or disableable per file/directory via `content-security.json`
+- Optional persistent password cookies (cross-session, cross-subdomain)
+- Home button configurable per file/directory; optional site root globe button
+- Admin interface: browse, upload, delete, and manage security rules at `/admin`
 - Optional S3 content backend (set `S3_BUCKET` — no local content files needed)
 
 ## Table of Contents
@@ -27,14 +30,14 @@ This project renders markdown documents from Amazon S3 or the `content/` directo
 6. [Build](#build)
 7. [Content Security](#content-security)
 8. [Home Button](#home-button)
-9. [TOC Default](#toc-default)
+9. [Navigation Sidebar](#navigation-sidebar)
 10. [S3 Content Backend](#s3-content-backend)
-12. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-13. [S3 Deployment Workflow](#s3-deployment-workflow)
-14. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-15. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-16. [Operational Notes](#operational-notes)
-17. [Troubleshooting](#troubleshooting)
+11. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
+12. [S3 Deployment Workflow](#s3-deployment-workflow)
+13. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+14. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+15. [Operational Notes](#operational-notes)
+16. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -67,12 +70,18 @@ Examples:
 	- Download PNG/SVG
 	- Fullscreen overlay with zoom controls
 - Sticky header with:
-	- TOC toggle button
+	- Table of contents toggle button
+	- Site map toggle button
+	- Home button (configurable target)
+	- Optional site root globe button
 	- Download source button
 	- Theme toggle
-- Responsive layout:
-	- Sidebar TOC on desktop
-	- TOC drawer on mobile
+- Navigation sidebar:
+	- Table of contents panel — collapsible tree, active heading tracking
+	- Site map panel — BFS-based discovery of all linked files
+	- Desktop: both panels can be open simultaneously
+	- Mobile: exclusive drawer (one panel at a time)
+- Responsive layout with sidebar on desktop and drawer on mobile
 
 ## Project Structure
 
@@ -82,17 +91,29 @@ app/
 		page.js              # Dynamic markdown route — server-rendered on each request
 		PageWrapper.js       # Route wrapper (uses shared shell)
 		MarkdownRenderer.js  # Markdown, highlighting, Mermaid rendering
+	admin/
+		page.js              # Admin shell server component
+		AdminShell.js        # Admin login, file browser, and rule editor
+		AdminSecurity.js     # Security rule editor UI
+	api/
+		admin/               # Admin API: auth, file CRUD, mkdir, security config
+		sitemap/route.js     # BFS site map API (security-aware)
+		asset-download/      # Gated asset download
 	asset/[...slug]/
 		route.js             # Serves images and binary files from content/
 	downloads/[...slug]/
 		route.js             # Serves markdown files for download (security-aware)
-	Header.js              # Top bar actions
-	MarkdownShell.js       # Shared shell with TOC state/layout
+	gate/[...slug]/
+		page.js              # Asset gate page
+	Header.js              # Top bar: home, site root, nav toggles, download, theme
+	MarkdownShell.js       # Shared shell with sidebar state and layout
 	SecurityGate.js        # Client-side password gate and stale-tab date check
-	TableOfContents.js     # TOC generation and active heading tracking
+	SiteMap.js             # Site map panel — BFS tree with loading state
+	TableOfContents.js     # TOC panel — collapsible tree with active heading tracking
 	ThemeContext.js        # Theme persistence and toggle
 	globals.css            # Full UI and token styling
 	page.js                # Root route for content/index.md
+	pw-cookie.js           # Cookie helpers for persistent password storage
 
 content/
 	...your live docs (optional)
@@ -107,7 +128,8 @@ content-security.json          # Security rules (create from .example)
 content-security.json.example  # Annotated example covering all rule types
 
 lib/
-	security.mjs           # Rule matching and AES-256-GCM encryption
+	security.mjs           # Rule matching, display config, AES-256-GCM encryption
+	content-provider.mjs   # FilesystemProvider and S3Provider (with CRUD)
 ```
 
 ## Local Development
@@ -196,7 +218,15 @@ Then rebuild and redeploy the site. For S3 based setups, see [instructions below
 | `validUntil` | ISO date. File is unavailable after this date. |
 | `download` | `true` or `false`. Overrides the default download behaviour (see below). |
 | `home` | Configures the home button for this file or directory. See [Home Button](#home-button). |
-| `toc` | `true` or `false`. Controls whether the TOC opens by default on desktop. See [TOC Default](#toc-default). |
+| `toc` | `true` or `false`. Controls whether the TOC panel opens by default on desktop. |
+| `indexFile` | Filename to use as the folder index (default: `index.md`). The site map roots navigation at this file. |
+| `name` | Display name for this folder or section, shown in the site map. |
+| `show_toc` | `true` (default) or `false`. Hides the ToC panel and its toggle button entirely when `false`. |
+| `show_sitemap` | `true` (default) or `false`. Hides the site map panel and its toggle button entirely when `false`. |
+| `sitemap` | `true` opens the site map panel by default on page load. Default: `false` (closed). |
+| `show_sitemap_first` | `true` places the site map panel above the ToC in the sidebar. Default: `false`. |
+| `show_sitemap_siteroot` | `true` adds a "↑ Site Root" chip next to "Home" in the site map when the map is rooted at a subfolder. |
+| `show_siteroot` | `true` adds a globe button to the header that navigates to the site root. Hidden automatically when home already points to `/`. |
 | `comment` | Optional human note — ignored at runtime. |
 
 All fields except `match` are optional and can be combined freely.
@@ -271,49 +301,102 @@ Add a `home` field to any rule to override the global default for specific files
 }
 ```
 
-## TOC Default
+## Navigation Sidebar
 
-The table of contents opens by default on desktop when a document has headings. This can be changed globally or per file/directory in `content-security.json` using the `toc` field — following the same match precedence as security rules and the home button.
+The sidebar contains two independent panels: **Table of Contents** and **Site Map**. Each has its own toggle button in the header. On desktop both panels can be open at the same time — whichever you open first appears at the top. On mobile, opening one closes the other (exclusive drawer).
 
-### Disabling globally
+### Table of Contents panel
+
+Auto-generated from H1–H3 headings in the document. Headings with sub-headings show a ▸ collapse toggle; clicking the heading link itself auto-expands that node. An expand-all / collapse-all button appears when there are collapsible nodes.
+
+The ToC opens by default on desktop when a document has headings. Control this with the `toc` field:
+
+| Value | Effect |
+|---|---|
+| `true` | Opens by default on desktop (built-in default). |
+| `false` | Starts closed — the user can still open it manually. |
+
+Set it globally or per-rule:
 
 ```json
 {
   "toc": false,
-  "rules": []
+  "rules": [
+    { "match": "docs/", "toc": true }
+  ]
 }
 ```
 
-### Per-file and per-directory overrides
+### Site Map panel
+
+The site map is built server-side by following markdown links breadth-first from the folder's index file (or the current file when no index exists). It only includes files that are reachable via links — unlinked files are not exposed. Password-protected directories only appear in the map after the user has unlocked them.
+
+The panel shows an animated "Indexing…" indicator immediately while the tree is being fetched; the tree replaces it when ready.
+
+Entries start collapsed. The expand-all / collapse-all button and "Home" entry (always visible at the top) are rendered as soon as the tree arrives.
+
+### Display configuration
+
+All display fields follow the same match precedence as security rules — most specific match wins, global values are the fallback.
+
+**Visibility toggles** — hide the panel and its header button entirely:
 
 ```json
 {
   "rules": [
     {
-      "comment": "Start TOC closed on the homepage",
-      "match": "index.md",
-      "toc": false
-    },
-    {
-      "comment": "Start TOC closed for an entire section",
       "match": "landing/",
-      "toc": false
-    },
-    {
-      "comment": "Re-enable TOC for a specific file inside a closed section",
-      "match": "landing/reference.md",
-      "toc": true
+      "show_toc": false,
+      "show_sitemap": false
     }
   ]
 }
 ```
 
-| Value | Effect |
-|---|---|
-| `true` | TOC opens by default on desktop (built-in default). |
-| `false` | TOC starts closed. The user can still open it manually. |
+**Open by default** — open a panel on page load without the user having to click:
 
-The TOC is always hidden on mobile regardless of this setting.
+```json
+{
+  "rules": [
+    {
+      "match": "firmware/",
+      "sitemap": true,
+      "show_sitemap_first": true
+    }
+  ]
+}
+```
+
+**Site map extras** — show a "↑ Site Root" chip next to "Home" when the map is scoped to a subfolder, and a globe button in the header for navigating to the site root:
+
+```json
+{
+  "rules": [
+    {
+      "match": "firmware/",
+      "home": "folder",
+      "show_sitemap_siteroot": true,
+      "show_siteroot": true
+    }
+  ]
+}
+```
+
+The globe button (`show_siteroot`) is suppressed automatically when the home button already points to `/`, so the two buttons never duplicate each other.
+
+**Full display config reference:**
+
+| Field | Default | Description |
+|---|---|---|
+| `toc` | `true` | Whether the ToC panel opens by default on desktop. |
+| `show_toc` | `true` | `false` hides the ToC panel and its toggle button entirely. |
+| `show_sitemap` | `true` | `false` hides the site map panel and its toggle button entirely. |
+| `sitemap` | `false` | `true` opens the site map panel by default on page load. |
+| `show_sitemap_first` | `false` | `true` places the site map panel above the ToC in the sidebar. |
+| `show_sitemap_siteroot` | `false` | `true` shows "↑ Site Root" chip next to "Home" in the site map. |
+| `show_siteroot` | `false` | `true` adds a globe button in the header linking to the site root. |
+
+All of these can be set globally (top-level in `content-security.json`) or per-rule. Per-rule values override the global value for matching paths.
 
 ## Persistent Password Cookies
 
