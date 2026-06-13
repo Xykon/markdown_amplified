@@ -145,57 +145,88 @@ export async function GET(request) {
       return true
     }
 
-    const visited   = new Set()
-    const crossRefed = new Set()  // paths reachable via multiple routes
+    if (!accessible(rootFile)) {
+      return NextResponse.json(null, {
+        headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=300' },
+      })
+    }
+
+    const visited    = new Set()
+    const crossRefed = new Set()   // paths reachable via multiple routes
+    const linksCache = new Map()   // path → parsed link array (avoids re-reading)
     let count = 0
 
-    async function build(filePath, depth) {
-      if (depth > MAX_DEPTH || count >= MAX_NODES) return null
-      if (visited.has(filePath)) return null
-      if (!accessible(filePath)) return null
-
-      visited.add(filePath)
-
+    async function readNode(filePath) {
       const buf = await provider.readFile(filePath)
       if (!buf) return null
       count++
-
       const content  = buf.toString('utf-8')
       const filename = filenameFallback(filePath)
       const title    = extractTitle(content, filename)
-      const rawLinks = extractMarkdownLinks(content, filePath)
+      linksCache.set(filePath, extractMarkdownLinks(content, filePath))
+      return { path: filePath, title, filename, children: [] }
+    }
 
-      const children = []
-      for (const { resolved, isDir } of rawLinks) {
-        if (count >= MAX_NODES) break
-        const localIndex = findIndexFile(resolved + '/placeholder.md', rules, globalIndexFile || 'index.md')
-        const target = isDir
-          ? (resolved ? `${resolved}/${localIndex}` : localIndex)
-          : resolved
-        if (visited.has(target)) {
-          // Already in tree via another route — record it so the node can be annotated
-          if (accessible(target)) crossRefed.add(target)
-          continue
+    function resolveTarget(resolved, isDir) {
+      const localIndex = findIndexFile(resolved + '/placeholder.md', rules, globalIndexFile || 'index.md')
+      return isDir ? (resolved ? `${resolved}/${localIndex}` : localIndex) : resolved
+    }
+
+    visited.add(rootFile)
+    const tree = await readNode(rootFile)
+
+    if (tree) {
+      // True BFS: for each node, mark ALL direct link targets as visited before
+      // reading any of them. This ensures a file linked at depth N is placed at
+      // depth N even if a sibling at depth N also links to it — the sibling will
+      // find it already visited and record it as a cross-reference instead.
+      const queue = [{ node: tree, depth: 0 }]
+
+      while (queue.length > 0 && count < MAX_NODES) {
+        const { node, depth } = queue.shift()
+        if (depth >= MAX_DEPTH) continue
+
+        const rawLinks = linksCache.get(node.path) || []
+
+        // Pass 1: resolve targets, mark unvisited+accessible ones as claimed.
+        // All siblings are claimed together before any of them are expanded.
+        const targets = []
+        for (const { resolved, isDir } of rawLinks) {
+          if (count >= MAX_NODES) break
+          const target = resolveTarget(resolved, isDir)
+          if (visited.has(target)) {
+            if (accessible(target)) crossRefed.add(target)
+            continue
+          }
+          if (!accessible(target)) continue
+          visited.add(target)
+          targets.push(target)
         }
-        const child = await build(target, depth + 1)
-        if (child) children.push(child)
+
+        // Pass 2: read each claimed target and attach as a child.
+        for (const target of targets) {
+          if (count >= MAX_NODES) break
+          const child = await readNode(target)
+          if (child) {
+            node.children.push(child)
+            queue.push({ node: child, depth: depth + 1 })
+          } else {
+            visited.delete(target)  // file not found — free the slot
+          }
+        }
       }
 
-      return { path: filePath, title, filename, children }
-    }
-
-    const tree = await build(rootFile, 0)
-
-    // Annotate nodes that are reachable via multiple routes
-    if (tree && crossRefed.size > 0) {
-      function annotate(node) {
-        if (crossRefed.has(node.path)) node.multiRef = true
-        node.children?.forEach(annotate)
+      // Annotate nodes that are reachable via multiple routes
+      if (crossRefed.size > 0) {
+        function annotate(node) {
+          if (crossRefed.has(node.path)) node.multiRef = true
+          node.children?.forEach(annotate)
+        }
+        annotate(tree)
       }
-      annotate(tree)
-    }
 
-    if (tree) tree.rootHref = rootHref
+      tree.rootHref = rootHref
+    }
 
     return NextResponse.json(tree ?? null, {
       headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=300' },

@@ -673,20 +673,20 @@ export default function AdminShell({ cookieConfig }) {
     return () => { cancelled = true }
   }, [authed, readonly])
 
-  function handleLogin(token, ro) {
+  const handleLogin = useCallback((token, ro) => {
     setToken(token)
     setStoredReadonly(ro)
     if (cookieConfig) writeCookie(adminCookieName(cookieConfig.prefix), token, cookieConfig)
     setReadonly(ro)
     setAuthed(true)
-  }
+  }, [cookieConfig])
 
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     clearToken(cookieConfig)
     setAuthed(false)
     folderPrefetchStarted.current = false
     setFolderPrefetch(null)
-  }
+  }, [cookieConfig])
 
   if (authed === null) return null
   if (!authed) return <LoginForm onLogin={handleLogin} />
