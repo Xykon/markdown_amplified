@@ -573,6 +573,19 @@ body {
   font-weight: 700;
 }
 /* Site root chip — inline to the right of Home */
+.sitemap-multiref-badge {
+  margin-left: 3px;
+  font-size: 0.7em;
+  opacity: 0.5;
+  vertical-align: super;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.sitemap-link.is-multiref {
+  font-style: italic;
+}
+
 .sitemap-siteroot-chip {
   flex-shrink: 0;
   font-size: 0.72em;

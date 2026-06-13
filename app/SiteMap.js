@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-export default function SiteMap({ resolvedFile, showSiteroot }) {
+export default function SiteMap({ resolvedFile, showSiteroot, labels = 'heading' }) {
   const [tree,    setTree]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [sectionOpen,  setSectionOpen]  = useState(true)
@@ -58,6 +58,7 @@ export default function SiteMap({ resolvedFile, showSiteroot }) {
               depth={0}
               defaultOpen={nodeDefault}
               showSiteroot={showSiteroot}
+              labels={labels}
             />
           </div>
         ) : (
@@ -68,18 +69,20 @@ export default function SiteMap({ resolvedFile, showSiteroot }) {
   )
 }
 
-function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
-  const isCurrent  = node.path === current
+function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot, labels }) {
+  const isCurrent   = node.path === current
   const hasChildren = node.children?.length > 0
-  const isRoot     = depth === 0
+  const isRoot      = depth === 0
   const [open, setOpen] = useState(defaultOpen ?? false)
 
-  const href = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
+  const href  = isRoot ? (node.rootHref ?? '/') : `/${node.path}`
+  const label = labels === 'filename' ? node.filename : node.title
 
   const linkClass = [
     'sitemap-link',
-    isCurrent ? 'is-current' : '',
-    isRoot    ? 'is-root'    : '',
+    isCurrent       ? 'is-current' : '',
+    isRoot          ? 'is-root'    : '',
+    node.multiRef   ? 'is-multiref': '',
   ].filter(Boolean).join(' ')
 
   // Root "Home" — not collapsible, children always visible
@@ -101,6 +104,7 @@ function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
                 current={current}
                 depth={depth + 1}
                 defaultOpen={defaultOpen}
+                labels={labels}
               />
             ))}
           </div>
@@ -123,7 +127,10 @@ function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
         ) : (
           <span className="sitemap-toggle-placeholder" />
         )}
-        <a href={href} className={linkClass}>{node.title}</a>
+        <a href={href} className={linkClass}>
+          {label}
+          {node.multiRef && <span className="sitemap-multiref-badge" title="Also linked from other pages">↗</span>}
+        </a>
       </div>
       {hasChildren && open && (
         <div className="sitemap-children">
@@ -134,6 +141,7 @@ function SiteMapNode({ node, current, depth, defaultOpen, showSiteroot }) {
               current={current}
               depth={depth + 1}
               defaultOpen={defaultOpen}
+              labels={labels}
             />
           ))}
         </div>

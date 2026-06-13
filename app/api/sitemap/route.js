@@ -145,7 +145,8 @@ export async function GET(request) {
       return true
     }
 
-    const visited = new Set()
+    const visited   = new Set()
+    const crossRefed = new Set()  // paths reachable via multiple routes
     let count = 0
 
     async function build(filePath, depth) {
@@ -159,8 +160,9 @@ export async function GET(request) {
       if (!buf) return null
       count++
 
-      const content = buf.toString('utf-8')
-      const title = extractTitle(content, filenameFallback(filePath))
+      const content  = buf.toString('utf-8')
+      const filename = filenameFallback(filePath)
+      const title    = extractTitle(content, filename)
       const rawLinks = extractMarkdownLinks(content, filePath)
 
       const children = []
@@ -170,14 +172,29 @@ export async function GET(request) {
         const target = isDir
           ? (resolved ? `${resolved}/${localIndex}` : localIndex)
           : resolved
+        if (visited.has(target)) {
+          // Already in tree via another route — record it so the node can be annotated
+          if (accessible(target)) crossRefed.add(target)
+          continue
+        }
         const child = await build(target, depth + 1)
         if (child) children.push(child)
       }
 
-      return { path: filePath, title, children }
+      return { path: filePath, title, filename, children }
     }
 
     const tree = await build(rootFile, 0)
+
+    // Annotate nodes that are reachable via multiple routes
+    if (tree && crossRefed.size > 0) {
+      function annotate(node) {
+        if (crossRefed.has(node.path)) node.multiRef = true
+        node.children?.forEach(annotate)
+      }
+      annotate(tree)
+    }
+
     if (tree) tree.rootHref = rootHref
 
     return NextResponse.json(tree ?? null, {

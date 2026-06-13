@@ -47,6 +47,7 @@ function ruleToForm(rule = {}) {
     show_sitemap_first:    tri(rule.show_sitemap_first),
     show_sitemap_siteroot: tri(rule.show_sitemap_siteroot),
     show_siteroot:         tri(rule.show_siteroot),
+    sitemap_labels:        rule.sitemap_labels || '',
   }
 }
 
@@ -81,6 +82,7 @@ function formToRule(form, existingRule = {}) {
   setBool('show_sitemap_first')
   setBool('show_sitemap_siteroot')
   setBool('show_siteroot')
+  if (form.sitemap_labels === 'filename' || form.sitemap_labels === 'heading') rule.sitemap_labels = form.sitemap_labels
   return rule
 }
 
@@ -221,6 +223,15 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
             <option value="false">Hide</option>
           </select>
           <p className="admin-field-help">Globe button in the header that navigates to the site root. Hidden automatically when home already points to the root.</p>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Site map labels</label>
+          <select className="admin-input admin-input-sm" value={form.sitemap_labels} onChange={e => set('sitemap_labels', e.target.value)} disabled={disabled}>
+            <option value="">Default (heading)</option>
+            <option value="heading">Page heading</option>
+            <option value="filename">Filename</option>
+          </select>
+          <p className="admin-field-help">Whether site map entries show the document's first heading or its filename.</p>
         </div>
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Custom name</label>

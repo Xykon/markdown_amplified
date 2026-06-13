@@ -14,6 +14,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
     showSitemapFirst = false,
     showSitemapSiteroot = false,
     showSiteroot = false,
+    sitemapLabels = 'heading',
   } = displayConfig ?? {}
 
   // Show the site-root button only when enabled AND home isn't already the root
@@ -97,7 +98,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
                 }
                 if (section === 'sitemap' && showSitemap) {
                   return (
-                    <SiteMap key="sitemap" resolvedFile={resolvedFile} showSiteroot={showSitemapSiteroot} />
+                    <SiteMap key="sitemap" resolvedFile={resolvedFile} showSiteroot={showSitemapSiteroot} labels={sitemapLabels} />
                   )
                 }
                 return null
