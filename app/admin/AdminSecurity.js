@@ -263,13 +263,20 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
 
 // ── Add rule form ─────────────────────────────────────────────────────────────
 
-function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
+function normalizeRuleMatch(value) {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed) return ''
+  if (trimmed === '/') return '/'
+  return trimmed.replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/+/g, '/').replace(/\/$/, '/')
+}
+
+function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch, rules = [] }) {
   const [folders, setFolders]           = useState(() => folderPrefetch?.folders ?? null)
   const [foldersLoading, setFoldersLoading] = useState(() => folderPrefetch?.folders != null ? false : (folderPrefetch?.loading ?? false))
   const [files, setFiles]               = useState([])
   const [folderChoice, setFolderChoice] = useState('')    // '' = root, path = subfolder, '_custom' = manual
   const [folderCustom, setFolderCustom] = useState('')
-  const [fileChoice, setFileChoice]     = useState('')    // '' = none (root), '_folder' = folder-wide, filename, '_custom'
+  const [fileChoice, setFileChoice]     = useState('_folder') // default to folder-wide rule for the selected scope
   const [fileCustom, setFileCustom]     = useState('')
   const [form, setForm]                 = useState(() => ruleToForm({}))
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -328,25 +335,27 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
       .catch(() => {})
   }, [folderChoice, onLogout])
 
-  const effectiveFolder = folderChoice === '_custom' ? folderCustom.trim() : folderChoice
+  const effectiveFolder = folderChoice === '_custom'
+    ? folderCustom.trim().replace(/^\/+/, '').replace(/\/+$/, '')
+    : folderChoice.trim().replace(/^\/+/, '').replace(/\/+$/, '')
   const isRoot = !effectiveFolder
 
-  // Compute match string
-  let match = ''
-  if (fileChoice === '_folder') {
-    match = effectiveFolder ? effectiveFolder + '/' : ''
-  } else if (fileChoice === '_custom') {
-    match = effectiveFolder
-      ? (fileCustom.trim() ? effectiveFolder + '/' + fileCustom.trim() : '')
-      : fileCustom.trim()
-  } else if (fileChoice) {
-    match = effectiveFolder ? effectiveFolder + '/' + fileChoice : fileChoice
-  }
+  const existingMatches = new Set((rules || []).map(rule => normalizeRuleMatch(rule.match)).filter(Boolean))
+
+  const candidateMatch = (() => {
+    if (fileChoice === '_folder') return effectiveFolder ? `${effectiveFolder}/` : '/'
+    if (fileChoice === '_custom') return effectiveFolder ? `${effectiveFolder}/${fileCustom.trim()}` : fileCustom.trim()
+    if (fileChoice) return effectiveFolder ? `${effectiveFolder}/${fileChoice}` : fileChoice
+    return ''
+  })()
+
+  const match = candidateMatch
+  const hasDuplicateMatch = !!match && existingMatches.has(normalizeRuleMatch(match))
 
   function handleFolderChange(val) {
     setFolderChoice(val)
     setFolderCustom('')
-    setFileChoice(val === '' ? '' : '_folder')
+    setFileChoice('_folder')
     setFileCustom('')
   }
 
@@ -366,8 +375,8 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Folder</label>
           <select className="admin-input admin-input-sm" value={folderChoice} onChange={e => handleFolderChange(e.target.value)} onMouseDown={triggerFolderLoad} onFocus={triggerFolderLoad}>
-            <option value="">{foldersLoading ? 'Loading, please wait…' : '— root folder —'}</option>
-            {(folders || []).map(f => <option key={f} value={f}>{f}/</option>)}
+            <option value="">{foldersLoading ? 'Loading, please wait…' : 'Site root (/)'}</option>
+            {(folders || []).filter(f => !existingMatches.has(`${f}/`)).map(f => <option key={f} value={f}>{f}/</option>)}
             <option value="_custom">Type manually…</option>
           </select>
           {folderChoice === '_custom' && (
@@ -378,10 +387,10 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
           <label className="admin-field-label">File</label>
           <select className="admin-input admin-input-sm" value={fileChoice} onChange={e => { setFileChoice(e.target.value); setFileCustom('') }} disabled={folderChoice === '_custom' && !effectiveFolder}>
             {isRoot
-              ? <option value="">— pick a file —</option>
+              ? <option value="_folder">Site root (/)</option>
               : <option value="_folder">— folder wide —</option>
             }
-            {files.map(f => <option key={f} value={f}>{f}</option>)}
+            {files.filter(f => !existingMatches.has(normalizeRuleMatch(effectiveFolder ? `${effectiveFolder}/${f}` : f))).map(f => <option key={f} value={f}>{f}</option>)}
             <option value="_custom">Type manually…</option>
           </select>
           {fileChoice === '_custom' && (
@@ -394,9 +403,10 @@ function AddRuleForm({ onAdd, onCancel, onLogout, folderPrefetch }) {
         </div>
       </div>
       {match && <code className="admin-sec-match-preview">match: {match}</code>}
+      {hasDuplicateMatch && <p className="admin-field-help" style={{ color: 'var(--danger, #c62828)' }}>This rule already exists and cannot be added again.</p>}
       <div className="admin-sec-form-actions">
         <button type="button" className="admin-btn" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="admin-btn admin-btn-primary" disabled={!match.trim()}>Next →</button>
+        <button type="submit" className="admin-btn admin-btn-primary" disabled={!match.trim() || hasDuplicateMatch}>Next →</button>
       </div>
     </form>
   )
@@ -573,7 +583,7 @@ export default function AdminSecurity({ readonly, onLogout, folderPrefetch }) {
           <tfoot>
             <tr>
               <td colSpan={colCount} className="admin-sec-edit-cell" style={{ borderTop: '2px solid var(--border)' }}>
-                <AddRuleForm onAdd={handleAddRule} onCancel={() => setShowAddForm(false)} onLogout={onLogout} folderPrefetch={folderPrefetch} />
+                <AddRuleForm onAdd={handleAddRule} onCancel={() => setShowAddForm(false)} onLogout={onLogout} folderPrefetch={folderPrefetch} rules={rules} />
               </td>
             </tr>
           </tfoot>
