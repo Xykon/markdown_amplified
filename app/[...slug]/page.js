@@ -2,7 +2,7 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import PageWrapper from './PageWrapper'
 import { getContentProvider } from '../../lib/content-provider.mjs'
-import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadGlobalDisplayConfig, loadCookieConfig, findRule, findHomeUrl, findTocOpen, findIndexFile, findDisplayConfig, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalToc, loadGlobalIndexFile, loadGlobalSiteHeader, loadGlobalDisplayConfig, loadCookieConfig, findRule, findHomeUrl, findGitHubUrl, findTocOpen, findIndexFile, findDisplayConfig, findSiteHeader, isWithinDateRange, isDownloadAllowed, encryptContent } from '../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((segment) => {
@@ -48,6 +48,7 @@ export default async function MarkdownPage({ params }) {
 
   const rule = findRule(relativeFile, rules)
   const homeUrl = findHomeUrl(relativeFile, rules, globalHome)
+  const githubUrl = findGitHubUrl(relativeFile, rules, globalSiteHeader.githubUrl)
   const tocOpen = findTocOpen(relativeFile, rules, globalToc)
   const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(relativeFile, rules, globalSiteHeader)
   const displayConfig = findDisplayConfig(relativeFile, rules, globalDisplayConfig)
@@ -93,6 +94,7 @@ export default async function MarkdownPage({ params }) {
       siteBanner={siteBanner ?? undefined}
       siteBannerLight={siteBannerLight ?? undefined}
       siteBannerDark={siteBannerDark ?? undefined}
+      githubUrl={githubUrl}
       siteButton={siteButton ?? undefined}
     />
   )

@@ -15,7 +15,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <Header homeUrl={homeUrl} siteName={globalSiteHeader.name} siteBanner={globalSiteHeader.banner ?? undefined} siteBannerLight={globalSiteHeader.bannerLight ?? undefined} siteBannerDark={globalSiteHeader.bannerDark ?? undefined} siteButton={globalSiteHeader.siteButton ?? undefined} />
+      <Header homeUrl={homeUrl} siteName={globalSiteHeader.name} siteBanner={globalSiteHeader.banner ?? undefined} siteBannerLight={globalSiteHeader.bannerLight ?? undefined} siteBannerDark={globalSiteHeader.bannerDark ?? undefined} githubUrl={globalSiteHeader.githubUrl ?? undefined} siteButton={globalSiteHeader.siteButton ?? undefined} />
       <div className="page-layout no-toc">
         <article className="markdown-body">
           <AdminShell cookieConfig={cookieConfig?.storeAdmin ? cookieConfig : undefined} />

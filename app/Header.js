@@ -3,7 +3,6 @@
 import { useContext, useEffect, useState } from 'react'
 import { ThemeContext } from './ThemeContext'
 
-const SOURCE_REPO_URL = 'https://github.com/Xykon/markdown_amplified'
 
 function SiteButtonEl({ siteButton, theme }) {
   const activeIcon = (theme?.isDark && siteButton.iconDark) ? siteButton.iconDark
@@ -21,7 +20,7 @@ function SiteButtonEl({ siteButton, theme }) {
   return <span className="header-button">{img}</span>
 }
 
-export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = false, onToggleToc, hasSiteMap = false, siteMapOpen = false, onToggleSiteMap, hasSiteRootButton = false, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = false, onToggleToc, hasSiteMap = false, siteMapOpen = false, onToggleSiteMap, hasSiteRootButton = false, homeUrl, siteName, siteBanner, siteBannerLight, siteBannerDark, githubUrl, siteButton }) {
   const theme = useContext(ThemeContext)
   const [backUrl, setBackUrl] = useState(null)
   const [bannerError, setBannerError] = useState(false)
@@ -241,7 +240,7 @@ export default function Header({ slug, resolvedFile, hasToc = false, tocOpen = f
           )}
           <a
             className="header-button github-button"
-            href={SOURCE_REPO_URL}
+            href={githubUrl || 'https://github.com/Xykon/markdown_amplified'}
             target="_blank"
             rel="noopener noreferrer"
             title="Open source repository"

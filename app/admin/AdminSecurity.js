@@ -42,6 +42,7 @@ function ruleToForm(rule = {}) {
     banner: rule.banner || '',
     bannerLight: rule.bannerLight || '',
     bannerDark: rule.bannerDark || '',
+    githubUrl: rule.githubUrl || '',
     show_toc:              tri(rule.show_toc),
     show_sitemap:          tri(rule.show_sitemap),
     show_sitemap_first:    tri(rule.show_sitemap_first),
@@ -73,6 +74,7 @@ function formToRule(form, existingRule = {}) {
   if (form.banner) rule.banner = form.banner
   if (form.bannerLight) rule.bannerLight = form.bannerLight
   if (form.bannerDark) rule.bannerDark = form.bannerDark
+  if (form.githubUrl) rule.githubUrl = form.githubUrl
   const setBool = (k) => {
     if (form[k] === 'true') rule[k] = true
     else if (form[k] === 'false') rule[k] = false
@@ -173,6 +175,11 @@ function RuleEditForm({ rule, onSave, onCancel, disabled, isNewRule }) {
             <option value="true">Open</option>
             <option value="false">Closed</option>
           </select>
+        </div>
+        <div className="admin-sec-edit-group">
+          <label className="admin-field-label">Source URL</label>
+          <input className="admin-input admin-input-sm" value={form.githubUrl} onChange={e => set('githubUrl', e.target.value)} disabled={disabled} placeholder="https://github.com/owner/repo" />
+          <p className="admin-field-help">Optional override for the header GitHub/source link at this scope.</p>
         </div>
         <div className="admin-sec-edit-group">
           <label className="admin-field-label">Index file</label>

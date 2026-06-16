@@ -20,6 +20,7 @@ function configToForm(config) {
     banner: config.banner || '',
     bannerLight: config.bannerLight || '',
     bannerDark: config.bannerDark || '',
+    githubUrl: config.githubUrl || config.github_url || '',
     indexFile: config.indexFile || 'index.md',
     sbEnabled: !!(b.icon || b.iconLight || b.iconDark),
     sbIcon: b.icon || '',
@@ -55,6 +56,7 @@ function formToConfig(form, existing, sensitiveEditable) {
   if (form.banner) result.banner = form.banner; else delete result.banner
   if (form.bannerLight) result.bannerLight = form.bannerLight; else delete result.bannerLight
   if (form.bannerDark) result.bannerDark = form.bannerDark; else delete result.bannerDark
+  if (form.githubUrl) result.githubUrl = form.githubUrl; else delete result.githubUrl
 
   if (form.indexFile && form.indexFile !== 'index.md') result.indexFile = form.indexFile; else delete result.indexFile
 

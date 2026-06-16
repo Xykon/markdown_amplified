@@ -6,7 +6,7 @@ import TableOfContents from './TableOfContents'
 import MarkdownRenderer from './[...slug]/MarkdownRenderer'
 import SiteMap from './SiteMap'
 
-export default function MarkdownShell({ slug, resolvedFile, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, displayConfig, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, siteButton }) {
+export default function MarkdownShell({ slug, resolvedFile, content, hasDownload = true, homeUrl, tocOpen: tocOpenDefault = true, displayConfig, cookieConfig, siteName, siteBanner, siteBannerLight, siteBannerDark, githubUrl, siteButton }) {
   const {
     showToc = true,
     showSitemap = true,
@@ -83,6 +83,7 @@ export default function MarkdownShell({ slug, resolvedFile, content, hasDownload
         siteBanner={siteBanner}
         siteBannerLight={siteBannerLight}
         siteBannerDark={siteBannerDark}
+        githubUrl={githubUrl}
         siteButton={siteButton}
       />
 

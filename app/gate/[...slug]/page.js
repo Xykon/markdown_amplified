@@ -1,7 +1,7 @@
 import path from 'path'
 import { notFound } from 'next/navigation'
 import AssetGate from './AssetGate'
-import { loadSecurityRules, loadGlobalHome, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findSiteHeader, isWithinDateRange, encryptContent } from '../../../lib/security.mjs'
+import { loadSecurityRules, loadGlobalHome, loadGlobalSiteHeader, loadCookieConfig, findRule, findHomeUrl, findGitHubUrl, findSiteHeader, isWithinDateRange, encryptContent } from '../../../lib/security.mjs'
 
 function decodeSlug(slug) {
   return (slug || []).map((s) => { try { return decodeURIComponent(s) } catch { return s } })
@@ -31,6 +31,7 @@ export default async function GatePage({ params }) {
   const withinDateRange = isWithinDateRange(rule)
   const filename = path.posix.basename(relPath)
   const homeUrl = findHomeUrl(relPath, rules, globalHome)
+  const githubUrl = findGitHubUrl(relPath, rules, globalSiteHeader.githubUrl)
   const { name: siteName, banner: siteBanner, bannerLight: siteBannerLight, bannerDark: siteBannerDark, siteButton } = findSiteHeader(relPath, rules, globalSiteHeader)
 
   const encrypted = withinDateRange ? await encryptContent(relPath, rule.password) : null
@@ -48,6 +49,7 @@ export default async function GatePage({ params }) {
       siteBanner={siteBanner ?? undefined}
       siteBannerLight={siteBannerLight ?? undefined}
       siteBannerDark={siteBannerDark ?? undefined}
+      githubUrl={githubUrl}
       siteButton={siteButton ?? undefined}
     />
   )
