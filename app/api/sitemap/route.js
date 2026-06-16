@@ -8,6 +8,7 @@ import {
   findRule,
   findIndexFile,
   isWithinDateRange,
+  ruleMatchesPath,
 } from '../../../lib/security.mjs'
 
 const MAX_DEPTH = 5
@@ -86,7 +87,7 @@ function getRootContext(currentFile, rules, globalIndexFile) {
   for (const rule of rules) {
     if (!rule.match || rule.home === undefined) continue
     const m = rule.match
-    const matched = m.endsWith('/') ? currentFile.startsWith(m) : currentFile === m
+    const matched = ruleMatchesPath(currentFile, m)
     if (matched && (!best || m.length > best.match.length)) best = rule
   }
   const homeValue = best?.home
