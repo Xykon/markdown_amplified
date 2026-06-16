@@ -45,12 +45,15 @@ function extractMarkdownLinks(content, fromFile) {
     const href = rawHref.split(/[#?]/)[0].trim()
     if (!href) continue
     if (/^[a-z+]+:/i.test(href)) continue
-    if (href.startsWith('/')) continue
-    const isDir = href.endsWith('/')
-    const isMarkdown = !isDir && href.endsWith('.md')
+
+    const normalizedHref = href.startsWith('/') ? href.slice(1) : href
+    const isDir = normalizedHref.endsWith('/')
+    const isMarkdown = !isDir && normalizedHref.endsWith('.md')
     if (!isMarkdown && !isDir) continue
-    const pathPart = isDir ? href.slice(0, -1) : href
-    const resolved = resolvePath(fromFile, pathPart)
+    const pathPart = isDir ? normalizedHref.slice(0, -1) : normalizedHref
+    const resolved = href.startsWith('/')
+      ? pathPart
+      : resolvePath(fromFile, pathPart)
     if (!resolved || seen.has(resolved)) continue
     seen.add(resolved)
     links.push({ resolved, isDir })
