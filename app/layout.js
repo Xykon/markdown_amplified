@@ -1,17 +1,20 @@
 import './globals.css'
 import 'katex/dist/katex.min.css'
 import { ThemeProvider } from './ThemeContext'
-import { loadAnalyticsConfig, loadGlobalSiteHeader } from '../lib/security.mjs'
+import { loadAnalyticsConfig, loadGlobalSeo, loadGlobalSiteHeader } from '../lib/security.mjs'
 import CookieBanner from './CookieBanner'
 
 export async function generateMetadata() {
-  const { name } = await loadGlobalSiteHeader()
+  const [{ name }, seo] = await Promise.all([loadGlobalSiteHeader(), loadGlobalSeo()])
   const siteName = name || 'Markdown Amplified'
+  const metadataBase = seo.siteUrl ? new URL(seo.siteUrl) : null
   return {
+    metadataBase,
     title: {
       template: `%s | ${siteName}`,
       default: siteName,
     },
+    description: seo.defaultDescription || undefined,
   }
 }
 

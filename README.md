@@ -14,6 +14,9 @@ This project renders markdown documents from Amazon S3 or the `content/` directo
 - Site map sidebar — BFS-based content discovery, password-aware, shows loading state while indexing
 - Download button for source markdown files
 - Light/dark theme toggle with persistence
+- Frontmatter-driven SEO metadata (title, description, keywords, canonical, robots, Open Graph image)
+- JSON-LD structured data injection from frontmatter
+- Built-in `robots.txt`, `sitemap.xml`, and `llms.txt` endpoints for search engines and AI agents
 - Per-file and per-directory security: password protection and date-range gating
 - Optional persistent password cookies (cross-session, cross-subdomain)
 - Home button configurable per file/directory; optional site root globe button
@@ -82,6 +85,40 @@ Examples:
 	- Desktop: both panels can be open simultaneously
 	- Mobile: exclusive drawer (one panel at a time)
 - Responsive layout with sidebar on desktop and drawer on mobile
+
+### Markdown frontmatter metadata
+
+Markdown files can define non-rendered metadata using YAML frontmatter. Example:
+
+```yaml
+---
+title: Markdown Amplified - AWS Amplify markdown viewer
+description: Server-rendered markdown docs with S3 backend, security gating, and SEO metadata.
+keywords:
+  - markdown viewer
+  - aws amplify markdown
+  - s3 markdown hosting
+canonical: /
+robots: index,follow
+ogImage: /asset/social-card.png
+schemaType: SoftwareApplication
+llmSummary: Fast markdown publishing platform for Amplify-hosted docs.
+---
+```
+
+Supported keys:
+
+- `title`
+- `description`
+- `keywords` (array or comma-separated string)
+- `canonical` (relative or absolute URL)
+- `robots` (for example `index,follow` or `noindex,nofollow`)
+- `ogImage` (relative or absolute URL)
+- `schemaType` (default: `WebSite` on home and `TechArticle` on markdown pages)
+- `schema` (full JSON object for custom JSON-LD)
+- `llmSummary` (summary line used by `llms.txt`)
+
+The frontmatter block is not rendered in the page body.
 
 ## Project Structure
 

@@ -1,3 +1,20 @@
+---
+title: Markdown Amplified | Server-rendered Markdown Viewer for AWS Amplify and S3
+description: Markdown Amplified is a server-rendered markdown publishing platform for AWS Amplify with optional Amazon S3 backend, security gating, and built-in SEO metadata support.
+keywords:
+  - markdown amplified
+  - markdown viewer
+  - aws amplify markdown hosting
+  - amazon s3 markdown site
+  - server rendered markdown
+  - markdown seo metadata
+  - llms.txt markdown site
+canonical: /
+robots: index,follow
+schemaType: SoftwareApplication
+llmSummary: Default project page for Markdown Amplified, showcasing markdown publishing, security controls, and search and AI crawler metadata features.
+---
+
 # Simple Markdown Online Viewer
 
 This site hosts Markdown files and renders them as readable web pages.

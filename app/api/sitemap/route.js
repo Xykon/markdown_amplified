@@ -11,6 +11,8 @@ import {
   ruleMatchesPath,
 } from '../../../lib/security.mjs'
 
+export const dynamic = 'force-dynamic'
+
 const MAX_DEPTH = 5
 const MAX_NODES = 200
 
