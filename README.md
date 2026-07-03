@@ -120,6 +120,20 @@ Supported keys:
 
 The frontmatter block is not rendered in the page body.
 
+### Global SEO defaults in content-security.json
+
+You can define optional global SEO defaults in `content-security.json`:
+
+```json
+{
+  "siteUrl": "https://docs.example.com",
+  "defaultDescription": "Technical docs and project pages built with Markdown Amplified."
+}
+```
+
+- `siteUrl` is used for canonical URLs, `sitemap.xml`, and absolute links in `llms.txt`.
+- `defaultDescription` is used when a markdown page does not provide a frontmatter `description`.
+
 ## Project Structure
 
 ```text
