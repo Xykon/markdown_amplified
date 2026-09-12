@@ -16,6 +16,15 @@ function resolveEnv(name) {
 const adminPath = (resolveEnv('ADMIN_PATH') || 'admin').replace(/^\/+|\/+$/g, '')
 
 const nextConfig = {
+  // A self-contained server bundle, for the container image only.
+  //
+  // `standalone` traces what the server actually imports and emits `.next/standalone` with a
+  // `server.js` and a pruned `node_modules`, which is the difference between a ~200MB image and a
+  // ~1GB one. It is gated on DOCKER_BUILD rather than set outright because Amplify expects the
+  // ordinary `.next` layout that `amplify.yml` publishes as its artifact — this repo has to keep
+  // building for both for as long as both are serving.
+  ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
+
   // Bake S3 credentials and ADMIN_PATH into the Lambda bundle at build time.
   // Amplify WEB_COMPUTE does not reliably forward console env vars to the
   // Next.js SSR Lambda at runtime, so runtime process.env lookups fail.

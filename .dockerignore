@@ -1,0 +1,31 @@
+# What must not reach the build context.
+#
+# Two rules, and the second is the one that costs real money when forgotten: nothing enormous, and
+# nothing secret. An image built here is pushed to a *public* Docker Hub repository, so anything in
+# this directory that is not excluded below is published to the world.
+
+# Regenerated inside the image by `next build`.
+node_modules
+.next/
+out/
+
+# History and local tooling: no use at runtime.
+.git
+.gitignore
+.github/
+
+# Secrets. `.env*.local` is gitignored, which is exactly why it would otherwise still be here.
+.env
+.env.*
+*.pem
+*.key
+
+# The live content. It is mounted at runtime from the host, never baked in — the image ships only
+# `content.default`, so the same public image serves the demo for anyone who runs it and the real
+# site for the host that has a volume. Leaving it out is what keeps those two facts independent.
+content/
+
+# Deployment descriptors for the other host, and a load-test script.
+amplify.yml
+customHttp.yml
+test_speed.py
