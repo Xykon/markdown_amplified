@@ -5,10 +5,10 @@
  * Selected with "theme": "valley" in content-security.json. Structure and rules: THEMES.md §1.4.
  *
  *   1. Mode-independent: fonts, radii, role overrides that do not depend on the mode.
- *   2. Light, also the base before hydration when the OS is light.
- *   3. Dark, twice with the same declarations: OS dark before hydration, and the explicit toggle.
- *      Every token of section 2 is restated here, because section 2's first selector always
- *      matches. scripts/check-themes.mjs compares the two dark blocks.
+ *   2. Light, also the base before hydration when the OS is light, and every printout.
+ *   3. Dark, on screen only, twice with the same declarations: OS dark before hydration, and the
+ *      explicit toggle. Every token of section 2 is restated here, because section 2's first
+ *      selector always matches. scripts/check-themes.mjs compares the two dark blocks.
  *   4. Look rules, only on selectors that have no html[data-theme=…] variant in globals.css.
  */
 
@@ -27,8 +27,10 @@ html[data-palette='valley'] {
   --nav-hover-border: transparent;
 }
 
-/* 2. Light */
-html[data-palette='valley'],
+/* 2. Light. The doubled attribute lifts the first selector to (0,2,1), so in print, where the dark
+   blocks do not apply, it also out-ranks the default's dark tokens (0,1,1) and a dark page prints
+   light, hairlines included. On screen the dark blocks below win by their order in this file. */
+html[data-palette='valley'][data-palette],
 html[data-palette='valley'][data-theme='light'] {
   color-scheme: light;
 
@@ -88,8 +90,8 @@ html[data-palette='valley'][data-theme='light'] {
   --backdrop: rgba(26, 26, 25, 0.45);
   --backdrop-soft: rgba(26, 26, 25, 0.2);
   --overlay-shadow: 0 8px 24px rgba(26, 26, 25, 0.12);
-  --selection-bg: rgba(57, 135, 229, 0.22);
-  --scrollbar-thumb: #8f8e87;
+  --selection-bg: #d1e2f5;
+  --scrollbar-thumb: #86857e;
 
   --mermaid-node-bg: #fcfcfa;
   --mermaid-node-border: #8a8982;
@@ -97,11 +99,23 @@ html[data-palette='valley'][data-theme='light'] {
   --mermaid-note-bg: #efdebc;
   --mermaid-note-border: #8a8982;
   --mermaid-cluster-bg: #ecebe6;
-  --mermaid-cluster-border: #a8a7a0;
+  --mermaid-cluster-border: #86857e;
+  --mermaid-active-bg: #d9e7f6;
+  --mermaid-crit-bg: #f8dedd;
+  /* analytics' eight series hues (palette.ts), darkened until white labels reach 4.5:1 */
+  --mermaid-cat-0: #256abf;
+  --mermaid-cat-1: #c35022;
+  --mermaid-cat-2: #15845d;
+  --mermaid-cat-3: #a06a00;
+  --mermaid-cat-4: #d03a71;
+  --mermaid-cat-5: #008300;
+  --mermaid-cat-6: #7162e3;
+  --mermaid-cat-7: #dd3030;
+  --mermaid-cat-ink: #ffffff;
 }
 
-/* 3. Dark: the OS setting before the page loads ... */
-@media (prefers-color-scheme: dark) {
+/* 3. Dark, on screen only: the OS setting before the page loads ... */
+@media screen and (prefers-color-scheme: dark) {
   html[data-palette='valley']:not([data-theme='light']) {
     color-scheme: dark;
 
@@ -162,8 +176,8 @@ html[data-palette='valley'][data-theme='light'] {
     --backdrop: rgba(0, 0, 0, 0.6);
     --backdrop-soft: rgba(0, 0, 0, 0.4);
     --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    --selection-bg: rgba(57, 135, 229, 0.35);
-    --scrollbar-thumb: #5d5c57;
+    --selection-bg: #254060;
+    --scrollbar-thumb: #7a7872;
 
     --mermaid-node-bg: #232322;
     --mermaid-node-border: #7a7872;
@@ -171,81 +185,107 @@ html[data-palette='valley'][data-theme='light'] {
     --mermaid-note-bg: #2f2f2d;
     --mermaid-note-border: #7a7872;
     --mermaid-cluster-bg: #1a1a19;
-    --mermaid-cluster-border: #5d5c57;
+    --mermaid-cluster-border: #7a7872;
+    --mermaid-active-bg: #192f49;
+    --mermaid-crit-bg: #3f2929;
+    /* analytics' eight series hues (palette.ts) as they are, green lifted to reach 4.5:1 */
+    --mermaid-cat-0: #3987e5;
+    --mermaid-cat-1: #d95926;
+    --mermaid-cat-2: #199e70;
+    --mermaid-cat-3: #c98500;
+    --mermaid-cat-4: #d55181;
+    --mermaid-cat-5: #009000;
+    --mermaid-cat-6: #9085e9;
+    --mermaid-cat-7: #e66767;
+    --mermaid-cat-ink: #0d0d0d;
   }
 }
 
 /* ... and the explicit toggle. Keep identical to the block above. */
-html[data-palette='valley'][data-theme='dark'] {
-  color-scheme: dark;
+@media screen {
+  html[data-palette='valley'][data-theme='dark'] {
+    color-scheme: dark;
 
-  --page-bg: #0d0d0d;
-  --surface: #1a1a19;
-  --surface-soft: #232322;
-  --surface-hover: #2f2f2d;
-  --text-strong: #ffffff;
-  --text: #c3c2b7;
-  --muted: #94928b;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.36);
-  --link: #6da7ec;
-  --link-hover: #86b6ef;
-  --accent: #3987e5;
-  --accent-hover: #5598e7;
-  --on-accent: #0d0d0d;
-  --accent-soft: rgba(57, 135, 229, 0.12);
-  --success: #4cc79a;
-  --danger: #ef8a8a;
-  --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.35);
-  --mark-bg: rgba(201, 133, 0, 0.35);
-  --mark-text: #ffffff;
-  --code-inline-bg: #232322;
-  --code-inline-border: rgba(255, 255, 255, 0.1);
-  --code-bg: #0d0d0d;
-  --code-border: rgba(255, 255, 255, 0.1);
-  --code-header-bg: #171717;
+    --page-bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-soft: #232322;
+    --surface-hover: #2f2f2d;
+    --text-strong: #ffffff;
+    --text: #c3c2b7;
+    --muted: #94928b;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.36);
+    --link: #6da7ec;
+    --link-hover: #86b6ef;
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --on-accent: #0d0d0d;
+    --accent-soft: rgba(57, 135, 229, 0.12);
+    --success: #4cc79a;
+    --danger: #ef8a8a;
+    --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --mark-bg: rgba(201, 133, 0, 0.35);
+    --mark-text: #ffffff;
+    --code-inline-bg: #232322;
+    --code-inline-border: rgba(255, 255, 255, 0.1);
+    --code-bg: #0d0d0d;
+    --code-border: rgba(255, 255, 255, 0.1);
+    --code-header-bg: #171717;
 
-  --hl-fg: #c3c2b7;
-  --hl-keyword: #a99ff0;
-  --hl-title: #6da7ec;
-  --hl-type: #e683a8;
-  --hl-attr: #ec8a5e;
-  --hl-string: #4cc79a;
-  --hl-constant: #e5a50a;
-  --hl-comment: #94928b;
-  --hl-meta: #a99ff0;
-  --hl-tag: #6da7ec;
-  --hl-section: #6da7ec;
-  --hl-add-fg: #4cc79a;
-  --hl-add-bg: rgba(25, 158, 112, 0.14);
-  --hl-del-fg: #ef8a8a;
-  --hl-del-bg: rgba(230, 103, 103, 0.12);
+    --hl-fg: #c3c2b7;
+    --hl-keyword: #a99ff0;
+    --hl-title: #6da7ec;
+    --hl-type: #e683a8;
+    --hl-attr: #ec8a5e;
+    --hl-string: #4cc79a;
+    --hl-constant: #e5a50a;
+    --hl-comment: #94928b;
+    --hl-meta: #a99ff0;
+    --hl-tag: #6da7ec;
+    --hl-section: #6da7ec;
+    --hl-add-fg: #4cc79a;
+    --hl-add-bg: rgba(25, 158, 112, 0.14);
+    --hl-del-fg: #ef8a8a;
+    --hl-del-bg: rgba(230, 103, 103, 0.12);
 
-  --blockquote-border: #383835;
-  --nav-hover-bg: rgba(255, 255, 255, 0.04);
-  --hover-bg: rgba(255, 255, 255, 0.05);
-  --control-border: rgba(255, 255, 255, 0.28);
-  --control-hover-border: rgba(255, 255, 255, 0.5);
-  --control-pressed-bg: rgba(57, 135, 229, 0.16);
-  --field-bg: #232322;
-  --danger-hover-bg: rgba(230, 103, 103, 0.16);
-  --danger-bg: rgba(230, 103, 103, 0.12);
-  --danger-border: rgba(230, 103, 103, 0.45);
-  --success-bg: rgba(25, 158, 112, 0.14);
-  --success-border: rgba(25, 158, 112, 0.45);
-  --backdrop: rgba(0, 0, 0, 0.6);
-  --backdrop-soft: rgba(0, 0, 0, 0.4);
-  --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --selection-bg: rgba(57, 135, 229, 0.35);
-  --scrollbar-thumb: #5d5c57;
+    --blockquote-border: #383835;
+    --nav-hover-bg: rgba(255, 255, 255, 0.04);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --control-border: rgba(255, 255, 255, 0.28);
+    --control-hover-border: rgba(255, 255, 255, 0.5);
+    --control-pressed-bg: rgba(57, 135, 229, 0.16);
+    --field-bg: #232322;
+    --danger-hover-bg: rgba(230, 103, 103, 0.16);
+    --danger-bg: rgba(230, 103, 103, 0.12);
+    --danger-border: rgba(230, 103, 103, 0.45);
+    --success-bg: rgba(25, 158, 112, 0.14);
+    --success-border: rgba(25, 158, 112, 0.45);
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --backdrop-soft: rgba(0, 0, 0, 0.4);
+    --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --selection-bg: #254060;
+    --scrollbar-thumb: #7a7872;
 
-  --mermaid-node-bg: #232322;
-  --mermaid-node-border: #7a7872;
-  --mermaid-secondary-bg: #1a1a19;
-  --mermaid-note-bg: #2f2f2d;
-  --mermaid-note-border: #7a7872;
-  --mermaid-cluster-bg: #1a1a19;
-  --mermaid-cluster-border: #5d5c57;
+    --mermaid-node-bg: #232322;
+    --mermaid-node-border: #7a7872;
+    --mermaid-secondary-bg: #1a1a19;
+    --mermaid-note-bg: #2f2f2d;
+    --mermaid-note-border: #7a7872;
+    --mermaid-cluster-bg: #1a1a19;
+    --mermaid-cluster-border: #7a7872;
+    --mermaid-active-bg: #192f49;
+    --mermaid-crit-bg: #3f2929;
+    /* analytics' eight series hues (palette.ts) as they are, green lifted to reach 4.5:1 */
+    --mermaid-cat-0: #3987e5;
+    --mermaid-cat-1: #d95926;
+    --mermaid-cat-2: #199e70;
+    --mermaid-cat-3: #c98500;
+    --mermaid-cat-4: #d55181;
+    --mermaid-cat-5: #009000;
+    --mermaid-cat-6: #9085e9;
+    --mermaid-cat-7: #e66767;
+    --mermaid-cat-ink: #0d0d0d;
+  }
 }
 
 /* 4. Look rules */
@@ -262,11 +302,12 @@ html[data-palette='valley'] .markdown-body :is(p, li) {
 }
 
 /* Prose links are always underlined: link and body text differ by less than 3:1, so colour alone
-   cannot mark them (WCAG 1.4.1). Heading anchors (aria-hidden) keep their own look. */
+   cannot mark them (WCAG 1.4.1). The underline is 80% of the link colour, at least 3:1 against card
+   and page in both modes. Heading anchors (aria-hidden) keep their own look. */
 html[data-palette='valley'] .markdown-body a:not([aria-hidden='true']) {
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--link) 55%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--link) 80%, transparent);
   text-underline-offset: 3px;
 }
 html[data-palette='valley'] .markdown-body a:not([aria-hidden='true']):hover {
@@ -328,10 +369,11 @@ html[data-palette='valley'] .admin-tab {
 html[data-palette='valley'] .admin-tab:hover {
   color: var(--text-strong);
 }
+/* The selected tab's outline is the 3:1 cue for its state (WCAG 1.4.11); fill and text add to it. */
 html[data-palette='valley'] .admin-tab.active {
   color: var(--text-strong);
   background: var(--surface-soft);
-  border-color: var(--border);
+  border-color: var(--border-strong);
 }
 html[data-palette='valley'] .markdown-body .admin-table th {
   font-size: 11px;

@@ -6,8 +6,9 @@
  *    (THEMES.md §2.2). :where() keeps this block at specificity (0,0,0), so any theme block
  *    overrides a role, and globals.css never defines these names, so nothing ties with the
  *    default. All tokens live on <html>, so var() resolves against the current mode's seeds.
- * 2. Rules the default does not have (heading colour, selection, focus rings, scrollbars, the
- *    gate button hover and two neutralisers for OS-dark rules in globals.css).
+ * 2. Rules the default does not have (heading colour, selection, placeholders, the controls' font,
+ *    focus rings, scrollbars, the gate button hover and two neutralisers for OS-dark rules in
+ *    globals.css).
  */
 
 :where(html[data-palette]) {
@@ -41,6 +42,7 @@
   /* Fields and buttons */
   --field-bg: var(--surface-soft);
   --field-border: var(--border-strong);
+  --placeholder: var(--muted);
   --focus-ring-shadow: none;
   --button-primary-bg: var(--accent);
   --button-primary-fg: var(--on-accent);
@@ -81,8 +83,11 @@
   --toggle-disabled-bg: var(--surface-hover);
   --toggle-disabled-knob: var(--muted);
 
-  /* Only themes use these */
-  --selection-bg: color-mix(in srgb, var(--accent) 35%, transparent);
+  /* Only themes use these. Selected text takes --selection-fg on an opaque --selection-bg, so every
+     text colour (muted, links, syntax comments, labels on buttons and diagram fills) is replaced by
+     one pair that does not depend on what lies underneath. */
+  --selection-bg: color-mix(in srgb, var(--accent) 35%, var(--surface));
+  --selection-fg: var(--text-strong);
   --scrollbar-thumb: var(--border-strong);
 
   /* Mermaid reads these from JavaScript (MarkdownRenderer.js); they must resolve to plain colours
@@ -101,6 +106,28 @@
   --mermaid-note-border: var(--muted);
   --mermaid-cluster-bg: var(--surface);
   --mermaid-cluster-border: var(--muted);
+  --mermaid-link: var(--link);
+
+  /* Gantt: every bar carries --mermaid-task-text; the four kinds differ by fill and border. Section
+     bands are drawn by Mermaid at 20% opacity. */
+  --mermaid-task-bg: var(--surface-soft);
+  --mermaid-task-border: var(--accent);
+  --mermaid-task-text: var(--text-strong);
+  --mermaid-active-bg: var(--surface-hover);
+  --mermaid-active-border: var(--accent-hover);
+  --mermaid-done-bg: var(--surface);
+  --mermaid-done-border: var(--muted);
+  --mermaid-crit-bg: var(--surface-soft);
+  --mermaid-crit-border: var(--danger);
+  --mermaid-section-bg: var(--muted);
+  --mermaid-section-bg-2: var(--accent);
+  --mermaid-section-alt-bg: var(--surface-hover);
+  --mermaid-grid: var(--muted);
+
+  /* Categorical colours, --mermaid-cat-0 to -7, and --mermaid-cat-ink, the label colour drawn on
+     them (gitGraph branches, mindmap and timeline sections, pie slices, xychart series). Optional
+     and without a default here: a theme sets all nine per mode, each colour at least 4.5:1 against
+     the ink and 3:1 against --mermaid-bg, or none, and Mermaid derives its own. */
 }
 
 /* ── Rules only themes get ─────────────────────────────────────────────── */
@@ -123,6 +150,19 @@ html[data-palette] .markdown-body pre code {
 
 html[data-palette] ::selection {
   background-color: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+/* The browser's own placeholder grey is under 4.5:1 on dark fields. */
+html[data-palette] ::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+/* Buttons and fields take the page font (--font-sans) instead of the browser's control font, as in
+   analytics. At (0,0,0) this beats only the browser default; any class rule in globals.css wins. */
+:where(html[data-palette]) :where(button, input, select, textarea) {
+  font-family: inherit;
 }
 
 html[data-palette] {

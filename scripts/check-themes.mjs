@@ -141,13 +141,15 @@ function lint() {
     // The four sections of a theme file
     const sel = (s) => s.replace(/\s+/g, ' ').trim()
     const base = `html[data-palette='${name}']`
-    const find = (selector, media) => rules.filter((r) => sel(r.selector) === selector && (media ? r.media && /prefers-color-scheme:\s*dark/.test(r.media) : !r.media))
+    // media: null for no @media, else a regex the block's @media prelude must match
+    const find = (selector, media = null) => rules.filter((r) => sel(r.selector) === selector && (media ? r.media && media.test(sel(r.media)) : !r.media))
     const tokensOf = (r) => new Map(declarations(r.body).filter(([p]) => p.startsWith('--') || p === 'color-scheme'))
-    const [light] = find(`${base}, ${base}[data-theme='light']`)
-    const [osDark] = find(`${base}:not([data-theme='light'])`, true)
-    const [dark] = find(`${base}[data-theme='dark']`)
+    const [light] = find(`${base}[data-palette], ${base}[data-theme='light']`)
+    const [osDark] = find(`${base}:not([data-theme='light'])`, /^@media screen and \(prefers-color-scheme:\s*dark\)$/)
+    const [dark] = find(`${base}[data-theme='dark']`, /^@media screen$/)
     const modeIndependent = find(base)
-    check(!!light && !!osDark && !!dark, `${file}: has a light block, an OS-dark block and an explicit dark block`)
+    check(!!light && !!osDark && !!dark, `${file}: has a light block (html[data-palette='${name}'][data-palette], …[data-theme='light']), ` +
+      `an OS-dark block in @media screen and (prefers-color-scheme: dark) and an explicit dark block in @media screen`)
     if (!light || !osDark || !dark) continue
     const L = tokensOf(light)
     const O = tokensOf(osDark)
@@ -256,8 +258,10 @@ const PAIRS = [
   ['link hover on card', 'link-hover', ['surface'], T],
   ['inline code', 'code-inline-fg', ['code-inline-bg', 'surface'], T],
   ['mark', 'mark-text', ['mark-bg', 'surface'], T],
-  ['headings on selection', 'text-strong', ['selection-bg', 'surface'], T],
-  ['body text on selection', 'text', ['selection-bg', 'surface'], T],
+  // --selection-bg should be opaque; if a theme makes it translucent, the worst grounds still count
+  ['selected text on card', 'selection-fg', ['selection-bg', 'surface'], T],
+  ['selected text on page and code', 'selection-fg', ['selection-bg', 'code-bg'], T],
+  ['selected text on accent fills', 'selection-fg', ['selection-bg', 'accent'], T],
   ['primary button', 'button-primary-fg', ['button-primary-bg'], T],
   ['primary button hover', 'button-primary-fg', ['button-primary-hover-bg'], T],
   ['success on card', 'success', ['surface'], T],
@@ -274,6 +278,7 @@ const PAIRS = [
   ['tool button hover, fg kept (admin, Mermaid)', 'control-fg', ['control-hover-bg', 'surface'], T],
   ['TOC button pressed', 'control-pressed-fg', ['control-pressed-bg', 'surface'], T],
   ['field text', 'text', ['field-bg', 'surface'], T],
+  ['placeholder', 'placeholder', ['field-bg', 'surface'], T],
   ['table head', 'table-head-fg', ['table-head-bg', 'surface'], T],
   ['table row hover', 'text', ['hover-bg', 'surface'], T],
   ['blockquote', 'blockquote-fg', ['surface'], T],
@@ -291,6 +296,12 @@ const PAIRS = [
   ['Mermaid node text', 'mermaid-node-text', ['mermaid-node-bg'], T],
   ['Mermaid edge label', 'mermaid-text', ['mermaid-bg'], T],
   ['Mermaid note text', 'mermaid-note-text', ['mermaid-note-bg'], T],
+  ['Gantt task text', 'mermaid-task-text', ['mermaid-task-bg'], T],
+  ['Gantt active task text', 'mermaid-task-text', ['mermaid-active-bg'], T],
+  ['Gantt done task text', 'mermaid-task-text', ['mermaid-done-bg'], T],
+  ['Gantt critical task text', 'mermaid-task-text', ['mermaid-crit-bg'], T],
+  ['Gantt marker text (vert, today)', 'mermaid-link', ['mermaid-bg'], T],
+  ...Array.from({ length: 8 }, (_, i) => [`Mermaid category ${i} label`, 'mermaid-cat-ink', [`mermaid-cat-${i}`], T]),
   ['focus ring vs page', 'accent', ['page-bg'], U],
   ['focus ring vs card', 'accent', ['surface'], U],
   ['focus ring vs soft surface', 'accent', ['surface-soft'], U],
@@ -305,11 +316,21 @@ const PAIRS = [
   ['nav current marker vs card', 'nav-active-border', ['nav-card-bg'], U],
   ['Mermaid node border vs chart', 'mermaid-node-border', ['mermaid-bg'], U],
   ['Mermaid line vs chart', 'mermaid-line', ['mermaid-bg'], U],
+  ['Mermaid group border vs chart', 'mermaid-cluster-border', ['mermaid-bg'], U],
+  ['Mermaid group border vs group', 'mermaid-cluster-border', ['mermaid-cluster-bg'], U],
+  ['Gantt task border vs chart', 'mermaid-task-border', ['mermaid-bg'], U],
+  ['Gantt active border vs chart', 'mermaid-active-border', ['mermaid-bg'], U],
+  ['Gantt done border vs chart', 'mermaid-done-border', ['mermaid-bg'], U],
+  ['Gantt critical border vs chart', 'mermaid-crit-border', ['mermaid-bg'], U],
+  ...Array.from({ length: 8 }, (_, i) => [`Mermaid category ${i} vs chart`, `mermaid-cat-${i}`, ['mermaid-bg'], U]),
+  ['scrollbar thumb vs page', 'scrollbar-thumb', ['page-bg'], U],
+  ['scrollbar thumb vs card', 'scrollbar-thumb', ['surface'], U],
 ]
-// Real elements, measured where present: [selector, threshold, label]
+// Real elements, measured where present: [selector, threshold, label, pseudo-element, colour property]
 const ELEMENTS = [
   ['.markdown-body p', T, 'paragraph'],
   ['.markdown-body a:not([aria-hidden])', T, 'prose link'],
+  ['.markdown-body p a:not([aria-hidden])', U, 'prose link underline', null, 'textDecorationColor'],
   ['.markdown-body h1', T, 'h1'],
   ['.markdown-body h6', T, 'h6'],
   ['.markdown-body th', T, 'table head'],
@@ -330,12 +351,14 @@ const ELEMENTS = [
   ['.security-gate-sub', T, 'gate text'],
   ['.security-gate-button', T, 'gate button'],
   ['.security-gate-input', T, 'gate input'],
+  ['input[placeholder]', T, 'placeholder', '::placeholder'],
   ['.sgw-cookie-heading', T, 'cookie heading'],
   ['.sgw-cookie-text', T, 'cookie text'],
   ['.sgw-cookie-accept', T, 'cookie Accept'],
   ['.sgw-cookie-outline', T, 'cookie Reject'],
   ['.admin-btn', T, 'admin button'],
   ['.admin-btn-primary', T, 'admin primary button'],
+  ['.admin-tab.active', U, 'admin selected tab outline', null, 'borderTopColor'],
 ]
 
 async function contrast(url) {
@@ -376,11 +399,21 @@ async function contrast(url) {
   // In-page measuring code: resolves tokens through a probe element, composites alpha, and walks
   // an element's ancestors for its effective background.
   const inPage = (pairs, elements) => {
+    // rgb()/rgba() directly; anything else (color-mix() computes to color(srgb …)) through a canvas pixel
+    const pixel = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
     const parse = (c) => {
-      const m = c.match(/rgba?\(([^)]+)\)/)
-      if (!m) return null
-      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat)
-      return [p[0], p[1], p[2], p[3] ?? 1]
+      if (!c) return null
+      const m = c.match(/^rgba?\(([^)]+)\)$/)
+      if (m) {
+        const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat)
+        return [p[0], p[1], p[2], p[3] ?? 1]
+      }
+      pixel.clearRect(0, 0, 1, 1)
+      pixel.fillStyle = 'rgba(0, 0, 0, 0)'
+      pixel.fillStyle = c
+      pixel.fillRect(0, 0, 1, 1)
+      const [r, g, b, a] = pixel.getImageData(0, 0, 1, 1).data
+      return a ? [r, g, b, a / 255] : null
     }
     const over = (top, under) => [0, 1, 2].map((i) => top[i] * top[3] + under[i] * (1 - top[3])).concat(1)
     const lum = ([r, g, b]) => {
@@ -423,12 +456,12 @@ async function contrast(url) {
       layers.push([255, 255, 255, 1])
       return flat(layers)
     }
-    for (const [selector, need, label] of elements) {
+    for (const [selector, need, label, pseudo, property = 'color'] of elements) {
       const el = [...document.querySelectorAll(selector)].find((e) => e.getClientRects().length)
       if (!el) continue
       const ground = background(el)
-      const cs = getComputedStyle(el)
-      const fg = parse(cs.color)
+      const fg = parse(getComputedStyle(el, pseudo || null)[property])
+      if (!fg) continue
       const r = ratio(over(fg, ground), ground)
       results.push({ label: `element: ${label}`, ratio: r, need, detail: `${hex(over(fg, ground))} on ${hex(ground)}` })
     }
