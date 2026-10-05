@@ -1,0 +1,184 @@
+/*
+ * SG Wireless: SKELETON, not active. It is neither imported by app/layout.js nor listed in THEMES
+ * (lib/themes.mjs), so "theme": "sgwireless" falls back to the default until it is.
+ *
+ * The values below are PLACEHOLDERS: the default (GitHub-like) palette, adjusted where the default
+ * fails WCAG AA, so the skeleton passes scripts/check-themes.mjs as it stands. None of them is
+ * SG Wireless branding; marketing supplies the real colours, font and logo.
+ *
+ * To activate (README "Themes", THEMES.md §4):
+ *   1. replace every TODO value (light block, then both dark blocks, which must stay identical);
+ *   2. add 'sgwireless' to THEMES in lib/themes.mjs and import './themes/sgwireless.css' in
+ *      app/layout.js;
+ *   3. node scripts/check-themes.mjs, then --contrast against a local server with the theme set.
+ */
+
+/* 1. Mode-independent: fonts, radii, role overrides that do not depend on the mode */
+html[data-palette='sgwireless'] {
+  /* TODO brand font: self-host it under public/ (the CSP allows only font-src 'self' data:) and
+     check its licence, e.g. --font-sans: 'Brand Sans', system-ui, sans-serif; */
+  --radius-card: 14px;
+  --radius-card-compact: 10px;
+  --radius-block: 10px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+}
+
+/* 2. Light, also the base before hydration when the OS is light */
+html[data-palette='sgwireless'],
+html[data-palette='sgwireless'][data-theme='light'] {
+  color-scheme: light;
+
+  --page-bg: #ffffff;              /* TODO */
+  --surface: #ffffff;              /* TODO */
+  --surface-soft: #f6f8fa;         /* TODO */
+  --surface-hover: #eaeef2;        /* TODO */
+  --text-strong: #1f2328;          /* TODO */
+  --text: #1f2328;                 /* TODO */
+  --muted: #57606a;                /* TODO at least 4.5:1 on surface-soft */
+  --border: #d0d7de;               /* TODO */
+  --border-strong: #818b98;        /* TODO at least 3:1 on surface (field and checkbox borders) */
+  --link: #0969da;                 /* TODO brand */
+  --link-hover: #0550ae;           /* TODO */
+  --accent: #0969da;               /* TODO brand: focus ring, checkbox, primary button, Accept */
+  --accent-hover: #0550ae;         /* TODO */
+  --on-accent: #ffffff;            /* TODO at least 4.5:1 on accent and accent-hover */
+  --accent-soft: #eef6ff;          /* TODO */
+  --success: #1a7f37;              /* TODO */
+  --danger: #cf222e;               /* TODO */
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 24px rgba(16, 24, 40, 0.06);
+  --mark-bg: #fff0b2;
+  --mark-text: #3f2d00;
+  --code-inline-bg: #eff2f6;
+  --code-inline-border: #e3e8ee;
+  --code-bg: #fafafa;
+  --code-border: #d0d7de;
+  --code-header-bg: #f0f2f4;
+
+  --hl-fg: #24292e;
+  --hl-keyword: #cf222e;
+  --hl-title: #8250df;
+  --hl-type: #953800;
+  --hl-attr: #0550ae;
+  --hl-string: #0a3069;
+  --hl-constant: #0550ae;
+  --hl-comment: #57606a;
+  --hl-meta: #0550ae;
+  --hl-tag: #116329;
+  --hl-section: #0550ae;
+  --hl-add-fg: #116329;
+  --hl-add-bg: #dafbe1;
+  --hl-del-fg: #82071e;
+  --hl-del-bg: #ffebe9;
+
+  /* Role overrides (app/themes/base.css derives every role from the seeds above) go here, only
+     where the derived value is wrong. Anything set in this block must be set in both dark blocks
+     too, because this block's first selector matches in dark mode as well. For example:
+       --consent-accent: …;   a brand-coloured Accept button
+       --nav-card-bg: …;      sidebar cards
+       --field-bg: #ffffff;   form fields */
+}
+
+/* 3. Dark: the OS setting before the page loads ... */
+@media (prefers-color-scheme: dark) {
+  html[data-palette='sgwireless']:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --page-bg: #0d1117;            /* TODO */
+    --surface: #0f1722;            /* TODO */
+    --surface-soft: #111b29;       /* TODO */
+    --surface-hover: #1b2737;      /* TODO */
+    --text-strong: #ffffff;        /* TODO */
+    --text: #e6edf3;               /* TODO */
+    --muted: #9ba7b4;              /* TODO */
+    --border: #2f3e52;             /* TODO */
+    --border-strong: #6e7681;      /* TODO at least 3:1 on surface */
+    --link: #78b7ff;               /* TODO brand */
+    --link-hover: #a5d0ff;         /* TODO */
+    --accent: #78b7ff;             /* TODO brand */
+    --accent-hover: #a5d0ff;       /* TODO */
+    --on-accent: #0d1117;          /* TODO (white on #78b7ff is 2.0:1 and fails) */
+    --accent-soft: #152436;        /* TODO */
+    --success: #3fb950;            /* TODO */
+    --danger: #ff7b72;             /* TODO */
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 26px rgba(0, 0, 0, 0.28);
+    --mark-bg: #614700;
+    --mark-text: #fff4cc;
+    --code-inline-bg: #161b22;
+    --code-inline-border: #30363d;
+    --code-bg: #0d1117;
+    --code-border: #30363d;
+    --code-header-bg: #161b22;
+
+    --hl-fg: #c9d1d9;
+    --hl-keyword: #ff7b72;
+    --hl-title: #d2a8ff;
+    --hl-type: #ffa657;
+    --hl-attr: #79c0ff;
+    --hl-string: #a5d6ff;
+    --hl-constant: #79c0ff;
+    --hl-comment: #8b949e;
+    --hl-meta: #79c0ff;
+    --hl-tag: #7ee787;
+    --hl-section: #79c0ff;
+    --hl-add-fg: #aff5b4;
+    --hl-add-bg: #033a16;
+    --hl-del-fg: #ffdcd7;
+    --hl-del-bg: #67060c;
+  }
+}
+
+/* ... and the explicit toggle. Keep identical to the block above (the lint compares them). */
+html[data-palette='sgwireless'][data-theme='dark'] {
+  color-scheme: dark;
+
+  --page-bg: #0d1117;            /* TODO */
+  --surface: #0f1722;            /* TODO */
+  --surface-soft: #111b29;       /* TODO */
+  --surface-hover: #1b2737;      /* TODO */
+  --text-strong: #ffffff;        /* TODO */
+  --text: #e6edf3;               /* TODO */
+  --muted: #9ba7b4;              /* TODO */
+  --border: #2f3e52;             /* TODO */
+  --border-strong: #6e7681;      /* TODO at least 3:1 on surface */
+  --link: #78b7ff;               /* TODO brand */
+  --link-hover: #a5d0ff;         /* TODO */
+  --accent: #78b7ff;             /* TODO brand */
+  --accent-hover: #a5d0ff;       /* TODO */
+  --on-accent: #0d1117;          /* TODO (white on #78b7ff is 2.0:1 and fails) */
+  --accent-soft: #152436;        /* TODO */
+  --success: #3fb950;            /* TODO */
+  --danger: #ff7b72;             /* TODO */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 26px rgba(0, 0, 0, 0.28);
+  --mark-bg: #614700;
+  --mark-text: #fff4cc;
+  --code-inline-bg: #161b22;
+  --code-inline-border: #30363d;
+  --code-bg: #0d1117;
+  --code-border: #30363d;
+  --code-header-bg: #161b22;
+
+  --hl-fg: #c9d1d9;
+  --hl-keyword: #ff7b72;
+  --hl-title: #d2a8ff;
+  --hl-type: #ffa657;
+  --hl-attr: #79c0ff;
+  --hl-string: #a5d6ff;
+  --hl-constant: #79c0ff;
+  --hl-comment: #8b949e;
+  --hl-meta: #79c0ff;
+  --hl-tag: #7ee787;
+  --hl-section: #79c0ff;
+  --hl-add-fg: #aff5b4;
+  --hl-add-bg: #033a16;
+  --hl-del-fg: #ffdcd7;
+  --hl-del-bg: #67060c;
+}
+
+/* 4. Look rules (optional), only on selectors without an html[data-theme=…] variant in
+   globals.css. Keep the prose-link underline unless --link reaches 3:1 against --text in both
+   modes (WCAG 1.4.1); here it does not (1.77:1 in dark). */
+html[data-palette='sgwireless'] .markdown-body a:not([aria-hidden='true']) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
