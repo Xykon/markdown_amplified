@@ -3,6 +3,7 @@
   "siteUrl": "https://markdown-amplified.ehlers.tv",
   "defaultDescription": "Technical docs and project pages built with Markdown Amplified.",  
   "home": "site",
+  "theme": "valley",
   "admin": {
     "enabled": true,
     "password": "DemoAdmin2026#",
