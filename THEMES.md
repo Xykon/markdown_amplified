@@ -40,7 +40,7 @@ The site's `content-security.json` selects the theme:
     if (typeof raw !== 'string') return { theme: null, warning: 'theme must be a string' }
     const name = raw.trim().toLowerCase()
     if (name === '' || name === 'default') return { theme: null }
-    if (!THEMES.includes(name)) return { theme: null, warning: `unknown theme ${JSON.stringify(name)}` }
+    if (!THEMES.includes(name)) return { theme: null, warning: `unknown theme ${JSON.stringify(raw)}` }
     return { theme: name }
   }
   ```
@@ -106,32 +106,37 @@ A theme file has four sections. Each section has a fixed selector shape:
 /* 1. Mode-independent: fonts, radii, role overrides that do not depend on the mode */
 html[data-palette='valley'] { … }
 
-/* 2. Light. This is also the base before hydration when the OS is light. */
-html[data-palette='valley'],
+/* 2. Light. This is also the base before hydration when the OS is light, and every printout. The doubled
+   attribute lifts the first selector to (0,2,1). */
+html[data-palette='valley'][data-palette],
 html[data-palette='valley'][data-theme='light'] { color-scheme: light; …every seed… }
 
-/* 3. Dark, written twice: OS dark before hydration, and the explicit toggle. Both blocks carry the same declarations. */
-@media (prefers-color-scheme: dark) {
+/* 3. Dark, on screen only, written twice: OS dark before hydration, and the explicit toggle. Both blocks carry the same declarations. */
+@media screen and (prefers-color-scheme: dark) {
   html[data-palette='valley']:not([data-theme='light']) { color-scheme: dark; …every seed… }
 }
-html[data-palette='valley'][data-theme='dark'] { color-scheme: dark; …every seed… }
+@media screen {
+  html[data-palette='valley'][data-theme='dark'] { color-scheme: dark; …every seed… }
+}
 
 /* 4. Look: structural rules (§3). Only for selectors that have no html[data-theme=…] variant in globals.css. */
 html[data-palette='valley'] .markdown-body hr { height: 1px; }
 ```
 
-**Specificity ladder.** Themes win by specificity, never by source order. Next.js may reorder CSS chunks, so order
-cannot be relied on.
+**Specificity ladder.** Themes win over the default by specificity, never by source order. Next.js may reorder CSS
+chunks, so order between files cannot be relied on. The one order a theme does rely on is inside its own file: the
+light block and the dark blocks are all (0,2,1), and the dark blocks come later.
 
 | Rule | Selector | Specificity | Beats |
 |---|---|---|---|
 | Default tokens, light and OS dark | `:root`, `@media … :root` | (0,1,0) | |
 | Default tokens, explicit mode | `html[data-theme='dark']`, `html[data-theme='light']` | (0,1,1) | |
 | Role defaults in `base.css` | `:where(html[data-palette])` | (0,0,0) | Nothing. Any theme block overrides them. The default never defines these tokens, so there is no tie. |
-| Theme section 1 and the light base | `html[data-palette='v']` | (0,1,1) | Default `:root` (only before hydration, when `data-theme` is absent) |
+| Theme section 1 | `html[data-palette='v']` | (0,1,1) | Default `:root`. Defines only tokens the default never defines, so it ties with nothing. |
+| Theme light base | `html[data-palette='v'][data-palette]` | (0,2,1) | Default `:root` and both default `html[data-theme=…]` blocks (0,1,1). In print, where the dark blocks do not apply, this is what makes a dark page print light. |
 | Theme light (explicit) | `html[data-palette='v'][data-theme='light']` | (0,2,1) | Default `html[data-theme='light']` (0,1,1) |
-| Theme dark (OS, before hydration) | `html[data-palette='v']:not([data-theme='light'])` inside `@media` | (0,2,1) | The theme's own light base (0,1,1) and default `:root` |
-| Theme dark (explicit) | `html[data-palette='v'][data-theme='dark']` | (0,2,1) | Default `html[data-theme='dark']` (0,1,1) |
+| Theme dark (OS, before hydration) | `html[data-palette='v']:not([data-theme='light'])` inside `@media screen and (prefers-color-scheme: dark)` | (0,2,1) | Default `:root`; the theme's own light base by order in the file |
+| Theme dark (explicit) | `html[data-palette='v'][data-theme='dark']` inside `@media screen` | (0,2,1) | Default `html[data-theme='dark']` (0,1,1); the theme's own light base by order in the file |
 | Theme look rule | `html[data-palette='v'] X` | X + (0,1,1) | Default `X`. It ties with a default `html[data-theme='dark'] X`, which is why such selectors are tokenised instead (§1.5). |
 | hljs | `html[data-palette] .hljs X` | X + (0,2,1) | Default `html[data-theme='dark'] X` = X + (0,1,1) |
 
@@ -139,20 +144,22 @@ cannot be relied on.
 
 | OS | Toggle (`data-theme`) | Theme block that applies |
 |---|---|---|
-| light | none (before hydration) | light base (0,1,1) |
-| dark | none (before hydration) | OS-dark block (0,2,1) |
+| light | none (before hydration) | light base (0,2,1) |
+| dark | none (before hydration) | OS-dark block (0,2,1), later in the file than the light base |
 | any | `light` | explicit light (0,2,1). The OS-dark block is excluded by its guard. |
 | any | `dark` | explicit dark (0,2,1). With OS dark, the OS-dark block also matches with the same values. |
+| any, printing | any | light base (0,2,1): both dark blocks are `screen` only |
 
 **Rules for theme files.** `scripts/check-themes.mjs` enforces all of them:
 
 - Every selector starts with `html[data-palette='<name>']` (or `:where(html[data-palette])` / `html[data-palette]`
   in the shared files). There is no `:root`, no `@layer` (unlayered `globals.css` would beat a layered theme), and no
   `!important`.
-- Both mode blocks define every seed token (§2.2) and `color-scheme`. The two dark blocks are identical.
+- The blocks have exactly the selectors and `@media` preludes of the template above. Both mode blocks define every
+  seed token (§2.2) and `color-scheme`. The two dark blocks are identical.
 - Every token set in the light block is set in both dark blocks too. The light block's first selector,
-  `html[data-palette='<name>']`, matches in every mode, so a token set only there would leak into dark. (A token set
-  only in the dark blocks is fine: in light the base derivation applies.)
+  `html[data-palette='<name>'][data-palette]`, matches in every mode, so a token set only there would leak into dark.
+  (A token set only in the dark blocks is fine: in light the base derivation applies.)
 - A token is defined in only one section.
 - Look rules never target a selector that `globals.css` also styles under `html[data-theme=…]`. The selectors with
   such a variant are: `.copy-button`, `.mermaid-tool-button`, `.hljs*`, `.security-gate-error`, `.admin-btn-danger`,
@@ -269,6 +276,11 @@ Mermaid's dark palette is hard-coded in JavaScript (`MarkdownRenderer.js:256-281
   }
   ```
 
+- **Gantt and categorical colours.** The same object also maps the Gantt variables (task, active, done and critical
+  bars, section bands, grid, today and vertical markers) and, when the theme sets `--mermaid-cat-0` … `-7` with
+  `--mermaid-cat-ink`, the gitGraph branches, the timeline, mindmap and kanban sections, pie slices and xychart series
+  (§2.6). Left to Mermaid, done bars are `lightgrey` and critical bars `red` under the theme's text colour (1.20:1
+  and 2.23:1 in valley dark), and every branch and section is a gray derived from the node colour.
 - **Mode changes.** The existing `mermaidThemeKey` (driven by `data-theme` and the media query) already re-renders
   the chart when the mode changes, and the values are read at that moment. No new observer is needed, because the
   palette never changes on the client.
@@ -283,13 +295,17 @@ Mermaid's dark palette is hard-coded in JavaScript (`MarkdownRenderer.js:256-281
 - **KaTeX** inherits `currentColor` and follows `--text`. Its fonts are its own, and `--font-sans` does not touch
   them. Error text (`errorColor`, default `#cc0000`, only on invalid TeX) is left alone.
 - **Images** keep a transparent background over `--surface` and get the theme's hairline.
-- **Print** is unchanged: the only print rule hides the Cookie settings pill. A dark mode prints light text, as the
-  default does today. A print palette would be a separate decision.
+- **Print** uses the theme's light palette in every mode: both dark blocks are `@media screen` only, and the light
+  base out-ranks the default's dark tokens (§1.4). A dark valley page therefore prints dark text with visible
+  hairlines; with the dark palette, its white hairlines at 10% alpha would vanish on paper. Mermaid charts keep the
+  colours they were rendered with. The default is unchanged: its only print rule hides the Cookie settings pill, and
+  a dark default page prints its dark-mode colours.
 
 ### 1.10 Avoiding a flash, and known limits
 
-- **The palette is never wrong on first paint.** `data-palette` is in the server HTML, and the theme CSS ships in the
-  same stylesheet as `globals.css`. Before hydration the mode follows the OS through the theme's guarded
+- **The palette is never wrong on first paint.** `data-palette` is in the server HTML, and the theme CSS ships in
+  render-blocking `<link rel="stylesheet">` tags in `<head>`, like `globals.css` (Next.js splits it over two of the
+  page's three CSS files; the third is KaTeX's). Before hydration the mode follows the OS through the theme's guarded
   `@media (prefers-color-scheme: dark)` block, so a themed page paints correctly from the first frame.
 - **The mode can flash, as today.** When a visitor's saved mode differs from the OS mode, the OS mode shows until
   `ThemeContext` hydrates. The fix is a small inline `<head>` script that sets `data-theme` before paint, plus
@@ -298,7 +314,9 @@ Mermaid's dark palette is hard-coded in JavaScript (`MarkdownRenderer.js:256-281
 - **The 404 page bakes in the build-time config.** `/_not-found` is the only prerendered page, and it carries the
   theme as it was at build time, exactly as it already does for the GA ID. On Amplify S3 builds the build reads the
   config from S3, so the two usually match.
-- **Config cache.** Changes take up to 60 seconds per instance.
+- **Config cache.** Changes take up to 60 seconds per instance. (Until the review round, a root
+  `content-security.json` was read once per process and never again: a pre-existing bug in `loadConfig`'s in-flight
+  promise, fixed separately in `lib/security.mjs`. S3 and the content provider were never affected.)
 
 ---
 
@@ -397,6 +415,7 @@ Google Fonts anyway. A brand font for sgwireless has to be self-hosted under `pu
 | `--control-pressed-fg` | 247 | `var(--link)` | `var(--text-strong)` | | |
 | `--field-bg` | gate input 1831 (`var(--surface-soft)`); admin input 1995 (`var(--surface)`) | as listed | `var(--surface-soft)` | | `#ffffff` |
 | `--field-border` | 1829, 1992 | `var(--border)` | `var(--border-strong)` | | |
+| `--placeholder` | `base.css` only (`::placeholder`, opacity 1) | — (the browser's grey, 3.41 on valley's dark field) | `var(--muted)` | (5.05 on field) | (6.03 on field) |
 | `--focus-ring-shadow` | admin input focus 2003 | `0 0 0 3px rgba(9,105,218,.15)` | `none` (the generic ring replaces it) | | |
 | `--button-primary-bg` | gate 1844; admin primary 2097, 2098 | `var(--link)` | `var(--accent)` | | |
 | `--button-primary-fg` | 1845, 2099 | `#fff` | `var(--on-accent)` | | |
@@ -423,8 +442,9 @@ Google Fonts anyway. A brand font for sgwireless has to be self-hosted under `pu
 | `--toggle-on-knob` | 2873 | `#fff` | `var(--on-accent)` | | |
 | `--toggle-disabled-bg` | 2876-2877 (`#d3d3d3`); 2910-2911 (`var(--border)`) | as listed | `var(--surface-hover)` | | |
 | `--toggle-disabled-knob` | 2881 | `#fff` | `var(--muted)` | | |
-| `--selection-bg` | `base.css` only | — | `color-mix(in srgb, var(--accent) 35%, transparent)` | `rgba(57,135,229,.35)` | `rgba(57,135,229,.22)` |
-| `--scrollbar-thumb` | `base.css` only | — | `var(--border-strong)` | `#5d5c57` | `#8f8e87` |
+| `--selection-bg` | `base.css` only; opaque, so the pair below holds over any fill | — | `color-mix(in srgb, var(--accent) 35%, var(--surface))` | `#254060` | `#d1e2f5` |
+| `--selection-fg` | `base.css` only: selected text takes it, so muted text, links, syntax comments and labels on buttons and diagram fills stay readable | — | `var(--text-strong)` | (10.60) | (13.19) |
+| `--scrollbar-thumb` | `base.css` only | — | `var(--border-strong)` | `#7a7872` (4.40 page / 3.95 card) | `#86857e` (3.31 / 3.61) |
 
 **What this means for the cookie banner in valley.** Accept is the primary button: accent fill with dark text in
 dark mode, white text in light. Reject is a neutral tool button with a strong border. Cookie settings is a pill.
@@ -465,7 +485,22 @@ violet, blue, magenta, orange, aqua, amber and gray.
 | `--mermaid-secondary-bg` | `var(--surface)` | `#1a1a19` | `#ecebe6` | `secondaryColor`, `activationBkgColor` |
 | `--mermaid-tertiary-bg` | `var(--surface-hover)` | `#2f2f2d` | `#e3e2dc` | `tertiaryColor` |
 | `--mermaid-note-bg` / `-text` / `-border` | `var(--surface-hover)` / `var(--text-strong)` / `var(--muted)` | `#2f2f2d` / `#ffffff` (13.42) / `#7a7872` | `#efdebc` / `#1a1a19` (13.14) / `#8a8982` | `noteBkgColor`, `labelBoxBkgColor` / `noteTextColor` / `noteBorderColor` |
-| `--mermaid-cluster-bg` / `-border` | `var(--surface)` / `var(--muted)` | `#1a1a19` / `#5d5c57` | `#ecebe6` / `#a8a7a0` | `clusterBkg` / `clusterBorder` |
+| `--mermaid-cluster-bg` / `-border` | `var(--surface)` / `var(--muted)` | `#1a1a19` / `#7a7872` (4.40 on bg, 3.95 on group) | `#ecebe6` / `#86857e` (3.31 / 3.10) | `clusterBkg` / `clusterBorder` |
+| `--mermaid-link` | `var(--link)` | | | `taskTextClickableColor`, `vertLineColor` |
+| `--mermaid-task-bg` / `-border` / `-text` | `var(--surface-soft)` / `var(--accent)` / `var(--text-strong)` | | | Gantt `taskBkgColor` / `taskBorderColor` / `taskTextColor`, `taskTextLightColor`, `taskTextDarkColor` (every bar's label) |
+| `--mermaid-active-bg` / `-border` | `var(--surface-hover)` / `var(--accent-hover)` | `#192f49` (13.60) | `#d9e7f6` (13.86) | `activeTaskBkgColor` / `activeTaskBorderColor` |
+| `--mermaid-done-bg` / `-border` | `var(--surface)` / `var(--muted)` | | | `doneTaskBkgColor` / `doneTaskBorderColor` |
+| `--mermaid-crit-bg` / `-border` | `var(--surface-soft)` / `var(--danger)` | `#3f2929` (13.46) | `#f8dedd` (13.67) | `critBkgColor` / `critBorderColor`, `todayLineColor` |
+| `--mermaid-section-bg` / `-bg-2` / `-alt-bg` | `var(--muted)` / `var(--accent)` / `var(--surface-hover)` | | | Gantt section bands (drawn at 20% opacity) |
+| `--mermaid-grid` | `var(--muted)` | | | `gridColor` |
+| `--mermaid-cat-0` … `-7`, `--mermaid-cat-ink` | none (optional; all nine or none) | analytics' SERIES, green lifted to `#009000`; ink `#0d0d0d` (4.62–6.33) | SERIES darkened (`#256abf` … `#dd3030`); ink `#ffffff` (4.61–5.25) | `git0-7` with `gitBranchLabel0-7` (gitGraph, mindmap root), `cScale0-11` with `cScaleLabel0-11` (timeline, mindmap, kanban), `pie1-8` with `pieSectionTextColor` (opacity 1), `xyChart.plotColorPalette` |
+
+Without a theme's categorical colours Mermaid derives them from the node colour, which on a gray palette makes every
+branch, section and slice the same gray with labels under 4.5:1. `taskTextOutsideColor` is `--mermaid-text`,
+`excludeBkgColor` is `--mermaid-secondary-bg` and `titleColor` is `--mermaid-node-text`. `xyChart` is passed whole
+(background, title, axis and label colours from the tokens above), because Mermaid merges it over the default
+theme's light values. With a theme, Mermaid also gets `themeCSS: '.eventWrapper { filter: none; }'`: it brightens timeline
+events by 20%, which took white labels on the light categories down to about 4:1.
 
 The values follow analytics' diagram idiom (`DocsDiagrams.tsx:75-92`): raised nodes, a quiet stroke and primary text.
 
@@ -496,8 +531,7 @@ the same pairs in the browser (§5.4).
 | `--link` vs `--text` (met by the underline, not by colour) | `#6da7ec` / `#c3c2b7` | 1.40 | `#256abf` / `#43423d` | 1.87 | decorative |
 | Inline code `--code-inline-fg` on `--code-inline-bg` | `#ffffff` / `#232322` | 15.73 | `#1a1a19` / `#ecebe6` | 14.59 | 4.5:1 |
 | `--mark-text` on `--mark-bg` over card | `#ffffff` / `#573f10` | 9.83 | `#1a1a19` / `#efdebc` | 13.14 | 4.5:1 |
-| `--text-strong` on `--selection-bg` over card | `#ffffff` / `#254060` | 10.58 | `#1a1a19` / `#d1e2f5` | 13.22 | 4.5:1 |
-| `--text` on `--selection-bg` over card | `#c3c2b7` / `#254060` | 5.90 | `#43423d` / `#d1e2f5` | 7.65 | 4.5:1 |
+| Selected text `--selection-fg` on `--selection-bg` (opaque, so on every ground) | `#ffffff` / `#254060` | 10.60 | `#1a1a19` / `#d1e2f5` | 13.19 | 4.5:1 |
 | Primary button `--on-accent` on `--accent` | `#0d0d0d` / `#3987e5` | 5.34 | `#ffffff` / `#256abf` | 5.39 | 4.5:1 |
 | Primary button hover `--on-accent` on `--accent-hover` | `#0d0d0d` / `#5598e7` | 6.51 | `#ffffff` / `#1c5cab` | 6.63 | 4.5:1 |
 | `--success` on `--surface` | `#4cc79a` / `#1a1a19` | 8.25 | `#0b7552` / `#fcfcfa` | 5.55 | 4.5:1 |
@@ -514,6 +548,7 @@ the same pairs in the browser (§5.4).
 | TOC button pressed `--control-pressed-fg` on `--control-pressed-bg` over header | `#ffffff` / `#1f2b3a` | 14.28 | `#1a1a19` / `#e5eef7` | 14.84 | 4.5:1 |
 | Admin button `--control-fg` on `--control-hover-bg` | `#c3c2b7` / `#2f2f2d` | 7.49 | `#43423d` / `#e3e2dc` | 7.76 | 4.5:1 |
 | Field text `--text` on `--field-bg` | `#c3c2b7` / `#232322` | 8.78 | `#43423d` / `#ffffff` | 10.07 | 4.5:1 |
+| Placeholder `--placeholder` on `--field-bg` | `#94928b` / `#232322` | 5.05 | `#64635d` / `#ffffff` | 6.03 | 4.5:1 |
 | Table head `--table-head-fg` on `--table-head-bg` | `#ffffff` / `#232322` | 15.73 | `#1a1a19` / `#ecebe6` | 14.59 | 4.5:1 |
 | Table cell `--text` on row hover over card | `#c3c2b7` / `#252525` | 8.51 | `#43423d` / `#f1f1ef` | 8.88 | 4.5:1 |
 | Blockquote `--blockquote-fg` on card | `#c3c2b7` / `#1a1a19` | 9.72 | `#43423d` / `#fcfcfa` | 9.80 | 4.5:1 |
@@ -537,6 +572,9 @@ the same pairs in the browser (§5.4).
 | Mermaid node text on node fill | `#ffffff` / `#232322` | 15.73 | `#1a1a19` / `#fcfcfa` | 16.96 | 4.5:1 |
 | Mermaid edge label `--mermaid-text` on chart bg | `#c3c2b7` / `#0d0d0d` | 10.85 | `#43423d` / `#f3f2ee` | 8.99 | 4.5:1 |
 | Mermaid note text on note fill | `#ffffff` / `#2f2f2d` | 13.42 | `#1a1a19` / `#efdebc` | 13.14 | 4.5:1 |
+| Gantt bar label `--mermaid-task-text` on task / active / done / critical fill | `#ffffff` / `#232322`, `#192f49`, `#1a1a19`, `#3f2929` | 15.73 / 13.60 / 17.42 / 13.46 | `#1a1a19` / `#ecebe6`, `#d9e7f6`, `#fcfcfa`, `#f8dedd` | 14.59 / 13.86 / 16.96 / 13.67 | 4.5:1 |
+| Gantt marker text `--mermaid-link` on chart bg | `#6da7ec` / `#0d0d0d` | 7.76 | `#256abf` / `#f3f2ee` | 4.82 | 4.5:1 |
+| Mermaid category label `--mermaid-cat-ink` on `--mermaid-cat-0…7` (lowest: green) | `#0d0d0d` / `#009000` | 4.62–6.33 | `#ffffff` / `#a06a00`, `#7162e3` | 4.61–5.25 | 4.5:1 |
 | Focus ring `--accent` vs page | `#3987e5` / `#0d0d0d` | 5.34 | `#256abf` / `#f3f2ee` | 4.82 | 3:1 |
 | Focus ring `--accent` vs `--surface` | `#3987e5` / `#1a1a19` | 4.79 | `#256abf` / `#fcfcfa` | 5.25 | 3:1 |
 | Focus ring `--accent` vs `--surface-soft` | `#3987e5` / `#232322` | 4.32 | `#256abf` / `#ecebe6` | 4.52 | 3:1 |
@@ -552,10 +590,15 @@ the same pairs in the browser (§5.4).
 | Nav current marker `--nav-active-border` vs card | `#3987e5` / `#1a1a19` | 4.79 | `#256abf` / `#fcfcfa` | 5.25 | 3:1 |
 | Mermaid node border vs chart bg | `#7a7872` / `#0d0d0d` | 4.40 | `#8a8982` / `#f3f2ee` | 3.13 | 3:1 |
 | Mermaid line `--mermaid-line` vs chart bg | `#94928b` / `#0d0d0d` | 6.24 | `#64635d` / `#f3f2ee` | 5.38 | 3:1 |
+| Mermaid group border `--mermaid-cluster-border` vs chart bg / group fill | `#7a7872` / `#0d0d0d`, `#1a1a19` | 4.40 / 3.95 | `#86857e` / `#f3f2ee`, `#ecebe6` | 3.31 / 3.10 | 3:1 |
+| Gantt bar borders (task, active, done, critical) vs chart bg | `#3987e5`, `#5598e7`, `#94928b`, `#ef8a8a` / `#0d0d0d` | 5.34–8.03 | `#256abf`, `#1c5cab`, `#64635d`, `#b42d2d` / `#f3f2ee` | 4.82–5.92 | 3:1 |
+| Mermaid categories `--mermaid-cat-0…7` vs chart bg (branch lines, edges) | SERIES / `#0d0d0d` | 4.62–6.33 | darkened SERIES / `#f3f2ee` | 4.11–4.41 | 3:1 |
+| Prose link underline (80% of `--link`) vs card / page | `#5c8bc2` / `#1a1a19`, `#0d0d0d` | 4.92 / 5.28 | `#5087cb` / `#fcfcfa`, `#f3f2ee` | 3.61 / 3.40 | 3:1 |
+| Admin selected tab outline `--border-strong` vs card | `#6c6c6c` / `#1a1a19` | 3.32 | `#8b8b8a` / `#fcfcfa` | 3.32 | 3:1 |
+| Scrollbar thumb `--scrollbar-thumb` vs page / card | `#7a7872` / `#0d0d0d`, `#1a1a19` | 4.40 / 3.95 | `#86857e` / `#f3f2ee`, `#fcfcfa` | 3.31 / 3.61 | 3:1 |
 | Hairline `--border` vs card | `#313130` / `#1a1a19` | 1.34 | `#e1e1df` / `#fcfcfa` | 1.28 | decorative |
 | Header button border vs header (the icon identifies the button, at 8.78 / 8.44) | `#5a5a59` / `#1a1a19` | 2.53 | `#bdbdbb` / `#fcfcfa` | 1.84 | decorative |
 | Blockquote bar vs card | `#383835` / `#1a1a19` | 1.48 | `#d4d3cd` / `#fcfcfa` | 1.46 | decorative |
-| Scrollbar thumb vs page (browser chrome) | `#5d5c57` / `#0d0d0d` | 2.90 | `#8f8e87` / `#f3f2ee` | 2.94 | decorative |
 | Disabled toggle knob on track (disabled controls are exempt) | `#94928b` / `#2f2f2d` | 4.31 | `#64635d` / `#e3e2dc` | 4.64 | decorative |
 
 ---
@@ -575,18 +618,18 @@ look rule targets a selector with no `html[data-theme=…]` variant in the defau
 | Header buttons | soft fill, hover turns blue | tool button: raised fill, `.28` white border; hover `#2f2f2d` with a `.5` border and white icon; TOC toggle when open = accent border plus 16% accent tint | `--control-*` | `.header-button`, `.toc-toggle-button` |
 | Sidebar cards | `--surface-soft` cards | `--surface` panels like analytics' sidebar | `--nav-card-bg` | `.toc-card`, mobile `.sidebar` |
 | TOC and site-map items | blue text plus a 5% blue tint on hover and current | rail idiom (`.docs-rail`): secondary text at rest; hover → white plus a `.04` tint; current → white, 2px accent bar, 12% accent tint, radius `0 6px 6px 0` | `--nav-*` tokens + look rule `:is(.toc-link, .sitemap-link) { border-radius: 0 6px 6px 0 }` | `.toc-link`, `.sitemap-link`, `.toc-section-header`, `.sitemap-siteroot-chip`, toggles |
-| Type | IBM Plex Sans / JetBrains Mono (neither loaded) | `system-ui` / `ui-monospace` stacks, no font request | `--font-sans`, `--font-mono` | `body`, code, `kbd`, admin |
+| Type | IBM Plex Sans / JetBrains Mono (neither loaded); buttons and fields in the browser's control font | `system-ui` / `ui-monospace` stacks, no font request; buttons and fields inherit the page font, as analytics' `font: inherit` | `--font-sans`, `--font-mono`; `base.css` sets `font-family: inherit` on `button`, `input`, `select`, `textarea` at (0,0,0) | `body`, code, `kbd`, admin, banner, gate |
 | Text levels | one text colour | prose secondary `#c3c2b7`; headings, `strong`, `th` and `dt` primary `#fff` | `--text`, `--text-strong` + `base.css` | `.markdown-body`, gate, banner, modal |
 | Headings | 600 | 600, `letter-spacing: -0.01em` on h1/h2, `text-wrap: balance`; paragraphs and items `text-wrap: pretty` | look rules | `.markdown-body h1–h6`, `p`, `li` |
 | Radii | card 14, blocks 10, gate 12, pills 20 | 8 for panels and blocks, 6 for controls (unchanged), 999 for pills; inline code and `kbd` 4, `mark` 2, images 6 | `--radius-*` + look rules on `:not(pre) > code`, `kbd`, `mark`, `img` | card, code, mermaid, details, gate, overlay, modal, chips |
-| Links in prose | blue, underline on hover | blue, **always underlined**: 1px at 55% of the link colour, offset 3px; hover → `--link-hover` with a 2px accent underline | look rule on `.markdown-body a:not([aria-hidden='true'])` | `.markdown-body a` (heading anchors excluded) |
+| Links in prose | blue, underline on hover | blue, **always underlined**: 1px at 80% of the link colour (at least 3:1 on card and page), offset 3px; hover → `--link-hover` with a 2px accent underline | look rule on `.markdown-body a:not([aria-hidden='true'])` | `.markdown-body a` (heading anchors excluded) |
 | Code | soft block, header strip | `--plane` well inside the card, hairline, 8px radius, `#171717` header strip, analytics-family syntax colours | tokens + `hljs.css` | `.code-block`, `pre`, `code` |
 | Tables | full grid, zebra, soft header | analytics `.setup-table`: horizontal hairlines only, no zebra, raised header with primary 600 text, `6px 12px` cells, `tabular-nums`, row hover tint | tokens + look rules (`border-left/right: 0`, padding, `tbody tr:hover`) | `.markdown-body table` |
 | Rules | `hr` 0.25em bar; quote bar 0.25em in `--border` | `hr` 1px hairline (docs-block idiom); quote bar 3px in `#383835` with secondary text | look rules + `--blockquote-*` | `hr`, `blockquote` |
 | Focus | browser default, a few custom rings | 2px `--accent` ring at offset 2 everywhere, inset by 1px on fields (analytics `.field`); visible on the cookie toggle | `base.css` | links, buttons, fields, toggle |
-| Selection, scrollbars, native controls | browser default, light scrollbars in dark | accent-tinted selection; thin `#5d5c57` thumbs; `color-scheme` per mode, so native controls and scrollbars follow the mode | `base.css` + `color-scheme` | page, sidebar, code, tables |
+| Selection, scrollbars, native controls | browser default, light scrollbars in dark | opaque accent-tinted selection with strong text; thin `#7a7872` / `#86857e` thumbs (3:1); `color-scheme` per mode, so native controls and scrollbars follow the mode | `base.css` + `color-scheme` | page, sidebar, code, tables |
 | Password gate | 12px card, blue button with white text | 8px panel, `--field-*` input with a 3:1 border, primary button (dark text on accent), danger text `#ef8a8a` (the message is worded, never colour only) | tokens | `.security-gate*` (also `AssetGate.js`) |
-| Admin | underline tabs, solid-red danger hover | pill tabs (analytics `.tab`): look rules make `.admin-tab` radius 999 with padding `6px 14px`, and the active tab raised with a hairline and white text; table headers 11px uppercase muted with `.05em` letter-spacing (`.setup-table th`); danger hover becomes a tint | tokens + look rules | `.admin-tab*`, `.admin-table th`, buttons, bars, modal |
+| Admin | underline tabs, solid-red danger hover | pill tabs (analytics `.tab`): look rules make `.admin-tab` radius 999 with padding `6px 14px`, and the active tab raised with a `--border-strong` outline (3.32, the 3:1 state cue) and white text; table headers 11px uppercase muted with `.05em` letter-spacing (`.setup-table th`); danger hover becomes a tint | tokens + look rules | `.admin-tab*`, `.admin-table th`, buttons, bars, modal |
 | Cookie banner | coral Accept and Reject | Accept = primary, Reject = tool button, Cookie settings = pill; geometry unchanged | `--consent-*`, `--toggle-*` | `.sgw-*` (classes, opacity and display untouched) |
 
 **Not carried over:**
@@ -607,8 +650,9 @@ look rule targets a selector with no `html[data-theme=…]` variant in the defau
 1. **Copy** the skeleton `app/themes/sgwireless.css`, or `valley.css` for a worked example, to
    `app/themes/<name>.css`. Replace the name in every selector. Use lowercase, `[a-z0-9-]`.
 2. **Fill the seeds** in the light block and the dark block: the 17 existing tokens (§2.1), the 8 new seeds (§2.2)
-   and the 15 `--hl-*` (§2.5). Then copy the dark block's declarations into the second dark block unchanged.
-   Brand colours usually land in `--accent`, `--accent-hover`, `--on-accent`, `--link`, `--link-hover` and the
+   and the 15 `--hl-*` (§2.5). Then copy the dark block's declarations into the second dark block unchanged. Keep
+   the selectors and `@media screen` wrappers of §1.4 exactly (print depends on them; the lint checks them).
+   Optionally add Mermaid's eight categorical colours and their ink (§2.6). Brand colours usually land in `--accent`, `--accent-hover`, `--on-accent`, `--link`, `--link-hover` and the
    surfaces.
 3. **Override roles** (§2.4, §2.6) only where the derived value is wrong. Common cases: header or nav treatment, a
    brand-coloured Accept button (`--consent-*`), a field fill, and Mermaid values when a seed is not a plain hex.
@@ -623,8 +667,11 @@ look rule targets a selector with no `html[data-theme=…]` variant in the defau
      in both modes);
    - `node scripts/check-consent.mjs http://localhost:<port>/`;
    - the screenshot set in §5.3.
-8. **Select:** set `"theme": "<name>"` in the site's `content-security.json`. Use the root file locally and the bucket
-   copy on S3 sites. It applies within 60 seconds per instance; the 404 page changes at the next build.
+8. **Deploy:** a theme is code. Commit it and push `main`; that deploys it to every Amplify app built from the
+   repository, where it stays inert unless selected.
+9. **Select:** set `"theme": "<name>"` in the site's `content-security.json`. Use the root file locally and the bucket
+   copy on S3 sites. It applies within 60 seconds per instance; the 404 page changes at the next build. Selecting it
+   before the deploy is harmless: the site keeps the default look and logs the unknown-theme line.
 
 ### 4.2 Skeleton: `app/themes/sgwireless.css`
 
@@ -646,8 +693,8 @@ html[data-palette='sgwireless'] {
   /* --radius-card: 14px;  --radius-card-compact: 10px;  --radius-block: 10px;  --radius-panel: 12px;  --radius-pill: 999px; */
 }
 
-/* 2. Light (also the pre-hydration base when the OS is light) */
-html[data-palette='sgwireless'],
+/* 2. Light (also the pre-hydration base when the OS is light, and print) */
+html[data-palette='sgwireless'][data-palette],
 html[data-palette='sgwireless'][data-theme='light'] {
   color-scheme: light;
   --page-bg: #ffffff;              /* TODO */
@@ -682,8 +729,8 @@ html[data-palette='sgwireless'][data-theme='light'] {
      --nav-card-bg: …;  --consent-accent: …;  --field-bg: #ffffff; */
 }
 
-/* 3. Dark. Keep both blocks identical. */
-@media (prefers-color-scheme: dark) {
+/* 3. Dark, on screen only. Keep both blocks identical. */
+@media screen and (prefers-color-scheme: dark) {
   html[data-palette='sgwireless']:not([data-theme='light']) {
     color-scheme: dark;
     --page-bg: #0d1117;            /* TODO */
@@ -716,8 +763,10 @@ html[data-palette='sgwireless'][data-theme='light'] {
     --hl-section: #79c0ff;  --hl-add-fg: #aff5b4;  --hl-add-bg: #033a16;  --hl-del-fg: #ffdcd7;  --hl-del-bg: #67060c;
   }
 }
-html[data-palette='sgwireless'][data-theme='dark'] {
-  /* exactly the declarations of the block above (the lint compares them) */
+@media screen {
+  html[data-palette='sgwireless'][data-theme='dark'] {
+    /* exactly the declarations of the block above (the lint compares them) */
+  }
 }
 
 /* 4. Look rules (optional). Only selectors without a default html[data-theme=…] variant. */
@@ -887,7 +936,12 @@ Re-run §5.2 after steps 2, 3 and 5.
 
    All of these change the default, so none is in this branch.
 5. **404 page:** it bakes the build-time theme and GA ID. Should it become dynamic, so both follow S3 edits without
-   a rebuild?
+   a rebuild? Its first HTML is also Next's error shell with no stylesheet, so with scripts off (or until they run)
+   it is an unstyled white page in every theme, the default included.
+   Two more default-wide accessibility gaps came out of the review: focus can leave the open cookie banner and
+   preferences modal for page controls under the backdrop (a focus trap, or `inert` on the page, in
+   `CookieBanner.js`), and a copy button reached with Shift+Tab can sit fully under the sticky header
+   (`scroll-padding-top` on `html`, with the headings' `scroll-margin-top` reduced to match).
 6. **Admin dropdown:** should Settings get a theme selector, or is the config file enough?
 7. **SG Wireless inputs needed from marketing:**
    - brand colours for light and dark, or confirmation that the site is light-only;
@@ -927,3 +981,20 @@ What the branch does differently from the note above, and why.
    (`.setup-table th` uses 400, which is hard to read at 11px on a docs page).
 8. **The skeleton** (`app/themes/sgwireless.css`) is written out in full, including the second dark block, and
    passes the lint. It is not imported and not in `THEMES`.
+9. **Review round (visual, contrast and code reviews).** Changes after the first implementation:
+   - **Placeholders** read `--placeholder` (base: `--muted`, opacity 1). The browser's grey was 3.41:1 on valley's
+     dark field, and on the password gate the placeholder is the only visible hint.
+   - **Mermaid** maps the Gantt variables and the optional categorical colours (§1.8, §2.6). Group borders, the
+     scrollbar thumb and the admin's selected-tab outline reach 3:1; the prose-link underline is 80% of the link
+     colour instead of 55%.
+   - **Selection** sets the text colour too (`--selection-fg`) on an opaque `--selection-bg`, so muted text, links,
+     comments and labels on buttons and diagram fills all become one pair above 4.5:1. (A translucent selection
+     with `--text-strong` fell to 3.5:1 over the accent buttons and Mermaid's coloured fills.)
+   - **Controls** inherit the page font (`base.css`, at (0,0,0)).
+   - **Print** uses the light palette (§1.9): the dark blocks are `screen` only and the light base is (0,2,1).
+   - `check-themes.mjs` measures the placeholder (`::placeholder`), the link underline and the selected admin tab
+     on the page, and the new token pairs.
+   - Left alone, because the default has them too and fixing them changes the default or the consent code: focus
+     can leave the cookie banner and modal for controls under the backdrop, a copy button reached with Shift+Tab can
+     sit under the sticky header, and the 404 page's first HTML is Next's error shell without stylesheets (white
+     until scripts run). See §6.

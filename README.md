@@ -542,14 +542,15 @@ A site can pick a **theme**: a palette and a few shape choices (font stack, corn
 - **Applied on the server.** The page arrives as `<html data-palette="valley">`, so the first paint already has the theme's palette; there is no flash of the default colours. The visitor's light/dark toggle keeps working inside the theme, and their choice is kept as before (`localStorage.theme`).
 - **Works with every content backend.** The theme is read from the same `content-security.json` as the rest of the configuration: the root file when there is one, otherwise the content provider's copy, which is the S3 bucket on S3-backed sites. A change in the bucket shows within 60 seconds (the config cache). The prerendered 404 page keeps the theme it was built with until the next build, as it does for the GA ID.
 - **No theme, no change.** Without `theme` the viewer looks exactly as it did before themes existed: every themable value in `globals.css` reads `var(--token, <the old value>)`, and only theme files define those tokens (`node scripts/check-themes.mjs --identity main` proves it).
-- **Accessible.** Every text and control colour in `valley` meets WCAG 2.2 AA (4.5:1 for text, 3:1 for borders, focus rings and other UI parts) in both modes. Prose links are always underlined, because link and body colours are close.
+- **Accessible.** Every text and control colour in `valley` meets WCAG 2.2 AA (4.5:1 for text, 3:1 for borders, focus rings and other UI parts) in both modes, Mermaid diagrams included. Prose links are always underlined, because link and body colours are close.
+- **Prints light.** A themed page prints with the theme's light palette whatever the screen mode, so tables, code frames and rules stay visible on paper.
 
 ### Adding a theme
 
 Each theme is one file, `app/themes/<name>.css`, with every selector scoped under `html[data-palette='<name>']`, so it does nothing on other sites. A theme sets about 40 colour tokens per mode; `app/themes/base.css` derives the component colours (navigation, buttons, fields, cookie banner, Mermaid and so on) from them, and `app/themes/hljs.css` colours code from the `--hl-*` tokens. `app/themes/sgwireless.css` is a ready-to-fill skeleton (placeholder colours, not SG Wireless branding; inactive until registered).
 
 1. Copy `app/themes/sgwireless.css` (or `valley.css` as a worked example) to `app/themes/<name>.css` and replace the name in every selector (lowercase, `[a-z0-9-]`).
-2. Fill the seed tokens in the light block and in the dark block, then copy the dark declarations into the second dark block unchanged (one serves the OS setting before the page loads, the other the explicit toggle).
+2. Fill the seed tokens in the light block and in the dark block, then copy the dark declarations into the second dark block unchanged (one serves the OS setting before the page loads, the other the explicit toggle). Keep the blocks' selectors and `@media screen` wrappers as they are: they make print use the light palette. Mermaid's categorical colours (`--mermaid-cat-0` … `-7` and `--mermaid-cat-ink`) are optional; see `valley.css`.
 3. Override derived component colours only where needed, for example a brand-coloured Accept button (`--consent-accent`). A token set in the light block must also be set in both dark blocks.
 4. Optionally change the font stack and radii. A brand font must be self-hosted under `public/`: the Content Security Policy only allows fonts from the site itself.
 5. Register it: add `'<name>'` to `THEMES` in `lib/themes.mjs` and `import './themes/<name>.css'` in `app/layout.js`.
@@ -558,7 +559,8 @@ Each theme is one file, `app/themes/<name>.css`, with every selector scoped unde
    - `node scripts/check-themes.mjs --identity main` proves the default look is unchanged against `main`;
    - `node scripts/check-themes.mjs --contrast http://localhost:3000/` measures every colour pair and the real page in light and dark (run it with the theme selected);
    - `node scripts/check-consent.mjs http://localhost:3000/` proves the cookie banner still gates Google Analytics.
-7. Select it with `"theme": "<name>"` in the site's `content-security.json`.
+7. Commit and push. A theme is code: it reaches a site only with a deploy, and pushing `main` deploys it to every Amplify app built from this repository (inert on the sites that do not select it).
+8. Select it with `"theme": "<name>"` in the site's `content-security.json` (in the S3 bucket for an S3-backed site). Selecting it before the deploy is harmless: the site keeps the default look and logs the unknown-theme line until the theme arrives.
 
 The design note [THEMES.md](THEMES.md) has the token tables, the contrast figures, the rules a theme file must follow and why.
 
