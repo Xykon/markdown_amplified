@@ -1,0 +1,385 @@
+/*
+ * valley: the look of the AI Valley analytics dashboard (analytics/client/analytics.css). Dark is
+ * analytics' warm grays, secondary text, rgba hairlines and blue accent; light is a warm-neutral
+ * palette in the same family (analytics itself has no light mode). Every pair is WCAG 2.2 AA.
+ * Selected with "theme": "valley" in content-security.json. Structure and rules: THEMES.md §1.4.
+ *
+ *   1. Mode-independent: fonts, radii, role overrides that do not depend on the mode.
+ *   2. Light, also the base before hydration when the OS is light, and every printout.
+ *   3. Dark, on screen only, twice with the same declarations: OS dark before hydration, and the
+ *      explicit toggle. Every token of section 2 is restated here, because section 2's first
+ *      selector always matches. scripts/check-themes.mjs compares the two dark blocks.
+ *   4. Look rules, only on selectors that have no html[data-theme=…] variant in globals.css.
+ */
+
+/* 1. Mode-independent */
+html[data-palette='valley'] {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --radius-card: 8px;
+  --radius-card-compact: 8px;
+  --radius-block: 8px;
+  --radius-panel: 8px;
+  --radius-pill: 999px;
+
+  --blockquote-fg: var(--text);
+  --nav-card-bg: var(--surface);
+  --nav-hover-border: transparent;
+}
+
+/* 2. Light. The doubled attribute lifts the first selector to (0,2,1), so in print, where the dark
+   blocks do not apply, it also out-ranks the default's dark tokens (0,1,1) and a dark page prints
+   light, hairlines included. On screen the dark blocks below win by their order in this file. */
+html[data-palette='valley'][data-palette],
+html[data-palette='valley'][data-theme='light'] {
+  color-scheme: light;
+
+  --page-bg: #f3f2ee;
+  --surface: #fcfcfa;
+  --surface-soft: #ecebe6;
+  --surface-hover: #e3e2dc;
+  --text-strong: #1a1a19;
+  --text: #43423d;
+  --muted: #64635d;
+  --border: rgba(26, 26, 25, 0.12);
+  --border-strong: rgba(26, 26, 25, 0.5);
+  --link: #256abf;
+  --link-hover: #1c5cab;
+  --accent: #256abf;
+  --accent-hover: #1c5cab;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(57, 135, 229, 0.12);
+  --success: #0b7552;
+  --danger: #b42d2d;
+  --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(26, 26, 25, 0.08);
+  --mark-bg: #efdebc;
+  --mark-text: #1a1a19;
+  --code-inline-bg: #ecebe6;
+  --code-inline-border: rgba(26, 26, 25, 0.12);
+  --code-bg: #f3f2ee;
+  --code-border: rgba(26, 26, 25, 0.12);
+  --code-header-bg: #eae9e5;
+
+  --hl-fg: #43423d;
+  --hl-keyword: #5a4bc4;
+  --hl-title: #1c5cab;
+  --hl-type: #b0306a;
+  --hl-attr: #b24418;
+  --hl-string: #0b7552;
+  --hl-constant: #8a5a00;
+  --hl-comment: #64635d;
+  --hl-meta: #5a4bc4;
+  --hl-tag: #1c5cab;
+  --hl-section: #1c5cab;
+  --hl-add-fg: #096a49;
+  --hl-add-bg: rgba(25, 158, 112, 0.12);
+  --hl-del-fg: #b42d2d;
+  --hl-del-bg: rgba(230, 103, 103, 0.1);
+
+  --blockquote-border: #d4d3cd;
+  --nav-hover-bg: rgba(26, 26, 25, 0.04);
+  --hover-bg: rgba(26, 26, 25, 0.05);
+  --control-border: rgba(26, 26, 25, 0.28);
+  --control-hover-border: rgba(26, 26, 25, 0.5);
+  --field-bg: #ffffff;
+  --danger-hover-bg: rgba(230, 103, 103, 0.1);
+  --danger-bg: rgba(230, 103, 103, 0.1);
+  --danger-border: rgba(180, 45, 45, 0.35);
+  --success-bg: rgba(25, 158, 112, 0.1);
+  --success-border: rgba(11, 117, 82, 0.35);
+  --backdrop: rgba(26, 26, 25, 0.45);
+  --backdrop-soft: rgba(26, 26, 25, 0.2);
+  --overlay-shadow: 0 8px 24px rgba(26, 26, 25, 0.12);
+  --selection-bg: #d1e2f5;
+  --scrollbar-thumb: #86857e;
+
+  --mermaid-node-bg: #fcfcfa;
+  --mermaid-node-border: #8a8982;
+  --mermaid-secondary-bg: #ecebe6;
+  --mermaid-note-bg: #efdebc;
+  --mermaid-note-border: #8a8982;
+  --mermaid-cluster-bg: #ecebe6;
+  --mermaid-cluster-border: #86857e;
+  --mermaid-active-bg: #d9e7f6;
+  --mermaid-crit-bg: #f8dedd;
+  /* analytics' eight series hues (palette.ts), darkened until white labels reach 4.5:1 */
+  --mermaid-cat-0: #256abf;
+  --mermaid-cat-1: #c35022;
+  --mermaid-cat-2: #15845d;
+  --mermaid-cat-3: #a06a00;
+  --mermaid-cat-4: #d03a71;
+  --mermaid-cat-5: #008300;
+  --mermaid-cat-6: #7162e3;
+  --mermaid-cat-7: #dd3030;
+  --mermaid-cat-ink: #ffffff;
+}
+
+/* 3. Dark, on screen only: the OS setting before the page loads ... */
+@media screen and (prefers-color-scheme: dark) {
+  html[data-palette='valley']:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --page-bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-soft: #232322;
+    --surface-hover: #2f2f2d;
+    --text-strong: #ffffff;
+    --text: #c3c2b7;
+    --muted: #94928b;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.36);
+    --link: #6da7ec;
+    --link-hover: #86b6ef;
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --on-accent: #0d0d0d;
+    --accent-soft: rgba(57, 135, 229, 0.12);
+    --success: #4cc79a;
+    --danger: #ef8a8a;
+    --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --mark-bg: rgba(201, 133, 0, 0.35);
+    --mark-text: #ffffff;
+    --code-inline-bg: #232322;
+    --code-inline-border: rgba(255, 255, 255, 0.1);
+    --code-bg: #0d0d0d;
+    --code-border: rgba(255, 255, 255, 0.1);
+    --code-header-bg: #171717;
+
+    --hl-fg: #c3c2b7;
+    --hl-keyword: #a99ff0;
+    --hl-title: #6da7ec;
+    --hl-type: #e683a8;
+    --hl-attr: #ec8a5e;
+    --hl-string: #4cc79a;
+    --hl-constant: #e5a50a;
+    --hl-comment: #94928b;
+    --hl-meta: #a99ff0;
+    --hl-tag: #6da7ec;
+    --hl-section: #6da7ec;
+    --hl-add-fg: #4cc79a;
+    --hl-add-bg: rgba(25, 158, 112, 0.14);
+    --hl-del-fg: #ef8a8a;
+    --hl-del-bg: rgba(230, 103, 103, 0.12);
+
+    --blockquote-border: #383835;
+    --nav-hover-bg: rgba(255, 255, 255, 0.04);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --control-border: rgba(255, 255, 255, 0.28);
+    --control-hover-border: rgba(255, 255, 255, 0.5);
+    --control-pressed-bg: rgba(57, 135, 229, 0.16);
+    --field-bg: #232322;
+    --danger-hover-bg: rgba(230, 103, 103, 0.16);
+    --danger-bg: rgba(230, 103, 103, 0.12);
+    --danger-border: rgba(230, 103, 103, 0.45);
+    --success-bg: rgba(25, 158, 112, 0.14);
+    --success-border: rgba(25, 158, 112, 0.45);
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --backdrop-soft: rgba(0, 0, 0, 0.4);
+    --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --selection-bg: #254060;
+    --scrollbar-thumb: #7a7872;
+
+    --mermaid-node-bg: #232322;
+    --mermaid-node-border: #7a7872;
+    --mermaid-secondary-bg: #1a1a19;
+    --mermaid-note-bg: #2f2f2d;
+    --mermaid-note-border: #7a7872;
+    --mermaid-cluster-bg: #1a1a19;
+    --mermaid-cluster-border: #7a7872;
+    --mermaid-active-bg: #192f49;
+    --mermaid-crit-bg: #3f2929;
+    /* analytics' eight series hues (palette.ts) as they are, green lifted to reach 4.5:1 */
+    --mermaid-cat-0: #3987e5;
+    --mermaid-cat-1: #d95926;
+    --mermaid-cat-2: #199e70;
+    --mermaid-cat-3: #c98500;
+    --mermaid-cat-4: #d55181;
+    --mermaid-cat-5: #009000;
+    --mermaid-cat-6: #9085e9;
+    --mermaid-cat-7: #e66767;
+    --mermaid-cat-ink: #0d0d0d;
+  }
+}
+
+/* ... and the explicit toggle. Keep identical to the block above. */
+@media screen {
+  html[data-palette='valley'][data-theme='dark'] {
+    color-scheme: dark;
+
+    --page-bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-soft: #232322;
+    --surface-hover: #2f2f2d;
+    --text-strong: #ffffff;
+    --text: #c3c2b7;
+    --muted: #94928b;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.36);
+    --link: #6da7ec;
+    --link-hover: #86b6ef;
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --on-accent: #0d0d0d;
+    --accent-soft: rgba(57, 135, 229, 0.12);
+    --success: #4cc79a;
+    --danger: #ef8a8a;
+    --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --mark-bg: rgba(201, 133, 0, 0.35);
+    --mark-text: #ffffff;
+    --code-inline-bg: #232322;
+    --code-inline-border: rgba(255, 255, 255, 0.1);
+    --code-bg: #0d0d0d;
+    --code-border: rgba(255, 255, 255, 0.1);
+    --code-header-bg: #171717;
+
+    --hl-fg: #c3c2b7;
+    --hl-keyword: #a99ff0;
+    --hl-title: #6da7ec;
+    --hl-type: #e683a8;
+    --hl-attr: #ec8a5e;
+    --hl-string: #4cc79a;
+    --hl-constant: #e5a50a;
+    --hl-comment: #94928b;
+    --hl-meta: #a99ff0;
+    --hl-tag: #6da7ec;
+    --hl-section: #6da7ec;
+    --hl-add-fg: #4cc79a;
+    --hl-add-bg: rgba(25, 158, 112, 0.14);
+    --hl-del-fg: #ef8a8a;
+    --hl-del-bg: rgba(230, 103, 103, 0.12);
+
+    --blockquote-border: #383835;
+    --nav-hover-bg: rgba(255, 255, 255, 0.04);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --control-border: rgba(255, 255, 255, 0.28);
+    --control-hover-border: rgba(255, 255, 255, 0.5);
+    --control-pressed-bg: rgba(57, 135, 229, 0.16);
+    --field-bg: #232322;
+    --danger-hover-bg: rgba(230, 103, 103, 0.16);
+    --danger-bg: rgba(230, 103, 103, 0.12);
+    --danger-border: rgba(230, 103, 103, 0.45);
+    --success-bg: rgba(25, 158, 112, 0.14);
+    --success-border: rgba(25, 158, 112, 0.45);
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --backdrop-soft: rgba(0, 0, 0, 0.4);
+    --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --selection-bg: #254060;
+    --scrollbar-thumb: #7a7872;
+
+    --mermaid-node-bg: #232322;
+    --mermaid-node-border: #7a7872;
+    --mermaid-secondary-bg: #1a1a19;
+    --mermaid-note-bg: #2f2f2d;
+    --mermaid-note-border: #7a7872;
+    --mermaid-cluster-bg: #1a1a19;
+    --mermaid-cluster-border: #7a7872;
+    --mermaid-active-bg: #192f49;
+    --mermaid-crit-bg: #3f2929;
+    /* analytics' eight series hues (palette.ts) as they are, green lifted to reach 4.5:1 */
+    --mermaid-cat-0: #3987e5;
+    --mermaid-cat-1: #d95926;
+    --mermaid-cat-2: #199e70;
+    --mermaid-cat-3: #c98500;
+    --mermaid-cat-4: #d55181;
+    --mermaid-cat-5: #009000;
+    --mermaid-cat-6: #9085e9;
+    --mermaid-cat-7: #e66767;
+    --mermaid-cat-ink: #0d0d0d;
+  }
+}
+
+/* 4. Look rules */
+
+/* Headings and prose, after analytics' Docs tab */
+html[data-palette='valley'] .markdown-body :is(h1, h2) {
+  letter-spacing: -0.01em;
+}
+html[data-palette='valley'] .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+  text-wrap: balance;
+}
+html[data-palette='valley'] .markdown-body :is(p, li) {
+  text-wrap: pretty;
+}
+
+/* Prose links are always underlined: link and body text differ by less than 3:1, so colour alone
+   cannot mark them (WCAG 1.4.1). The underline is 80% of the link colour, at least 3:1 against card
+   and page in both modes. Heading anchors (aria-hidden) keep their own look. */
+html[data-palette='valley'] .markdown-body a:not([aria-hidden='true']) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--link) 80%, transparent);
+  text-underline-offset: 3px;
+}
+html[data-palette='valley'] .markdown-body a:not([aria-hidden='true']):hover {
+  color: var(--link-hover);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+/* Small shapes */
+html[data-palette='valley'] .markdown-body :not(pre) > code,
+html[data-palette='valley'] .markdown-body kbd {
+  border-radius: 4px;
+}
+html[data-palette='valley'] .markdown-body mark {
+  border-radius: 2px;
+}
+html[data-palette='valley'] .markdown-body img {
+  border-radius: 6px;
+}
+
+/* Rules: a hairline, and a 3px quote bar */
+html[data-palette='valley'] .markdown-body hr {
+  height: 1px;
+}
+html[data-palette='valley'] .markdown-body blockquote {
+  border-left-width: 3px;
+}
+
+/* Tables like analytics' .setup-table: horizontal hairlines, no zebra, a raised header row.
+   The admin's own tables (inside .markdown-body too) keep their layout. */
+html[data-palette='valley'] .markdown-body table:not(.admin-table) :is(th, td) {
+  padding: 6px 12px;
+  border-left: 0;
+  border-right: 0;
+}
+html[data-palette='valley'] .markdown-body table:not(.admin-table) td {
+  font-variant-numeric: tabular-nums;
+}
+html[data-palette='valley'] .markdown-body table:not(.admin-table) tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Sidebar rail, like analytics' .docs-rail */
+html[data-palette='valley'] :is(.toc-link, .sitemap-link) {
+  border-radius: 0 6px 6px 0;
+}
+
+/* Admin: pill tabs like analytics' .tab, quiet uppercase table headers like .setup-table th */
+html[data-palette='valley'] .admin-tab-bar {
+  border-bottom-width: 1px;
+  padding-bottom: 8px;
+}
+html[data-palette='valley'] .admin-tab {
+  margin-bottom: 0;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+html[data-palette='valley'] .admin-tab:hover {
+  color: var(--text-strong);
+}
+/* The selected tab's outline is the 3:1 cue for its state (WCAG 1.4.11); fill and text add to it. */
+html[data-palette='valley'] .admin-tab.active {
+  color: var(--text-strong);
+  background: var(--surface-soft);
+  border-color: var(--border-strong);
+}
+html[data-palette='valley'] .markdown-body .admin-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background-color: transparent;
+  border-bottom-width: 1px;
+}

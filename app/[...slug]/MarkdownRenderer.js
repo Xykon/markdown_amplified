@@ -280,11 +280,119 @@ function MermaidBlock({ chart }) {
           activationBkgColor: '#1f2937',
         }
 
+        // A site theme (data-palette on <html>) supplies Mermaid's colours for both modes through
+        // --mermaid-* tokens (app/themes/base.css), read now so they match the current mode.
+        // Without a theme Mermaid runs exactly as before.
+        const palette = document.documentElement.getAttribute('data-palette')
+        let themeVariables = isDark ? darkThemeVariables : undefined
+        if (palette) {
+          const cs = getComputedStyle(document.documentElement)
+          const v = (name) => cs.getPropertyValue(`--mermaid-${name}`).trim() || undefined
+          // Mermaid copies every key, so a token that is not set is left out rather than passed as undefined.
+          const defined = (o) => Object.fromEntries(Object.entries(o).filter(([, value]) => value !== undefined))
+          // Categorical colours with their label ink: gitGraph branches (and the mindmap root),
+          // timeline, mindmap and kanban sections, pie slices and xychart series. Without them
+          // Mermaid derives every one from the node colour, which on a gray palette is gray.
+          const cats = Array.from({ length: 8 }, (_, i) => v(`cat-${i}`))
+          const ink = v('cat-ink')
+          const series = {}
+          if (ink && cats.every(Boolean)) {
+            cats.forEach((c, i) => {
+              series[`git${i}`] = c
+              series[`gitBranchLabel${i}`] = ink
+              series[`pie${i + 1}`] = c
+            })
+            for (let i = 0; i < 12; i++) {
+              series[`cScale${i}`] = cats[i % 8]
+              series[`cScaleLabel${i}`] = ink
+            }
+            Object.assign(series, {
+              pieSectionTextColor: ink,
+              pieOpacity: '1',
+              pieStrokeColor: v('bg'),
+              pieOuterStrokeColor: v('line'),
+              // Mermaid merges xyChart over the default (light) theme's, so every colour is given.
+              xyChart: defined({
+                backgroundColor: v('bg'),
+                titleColor: v('node-text'),
+                dataLabelColor: v('node-text'),
+                xAxisTitleColor: v('text'),
+                xAxisLabelColor: v('text'),
+                xAxisTickColor: v('line'),
+                xAxisLineColor: v('line'),
+                yAxisTitleColor: v('text'),
+                yAxisLabelColor: v('text'),
+                yAxisTickColor: v('line'),
+                yAxisLineColor: v('line'),
+                plotColorPalette: cats.join(','),
+              }),
+            })
+          }
+          themeVariables = defined({
+            darkMode: isDark,
+            fontFamily: v('font'),
+            background: v('bg'),
+            primaryColor: v('node-bg'),
+            primaryBorderColor: v('node-border'),
+            primaryTextColor: v('node-text'),
+            secondaryColor: v('secondary-bg'),
+            tertiaryColor: v('tertiary-bg'),
+            lineColor: v('line'),
+            textColor: v('text'),
+            mainBkg: v('node-bg'),
+            nodeBorder: v('node-border'),
+            clusterBkg: v('cluster-bg'),
+            clusterBorder: v('cluster-border'),
+            edgeLabelBackground: v('bg'),
+            noteBkgColor: v('note-bg'),
+            noteTextColor: v('note-text'),
+            noteBorderColor: v('note-border'),
+            actorBkg: v('node-bg'),
+            actorBorder: v('node-border'),
+            actorTextColor: v('node-text'),
+            actorLineColor: v('line'),
+            signalColor: v('text'),
+            signalTextColor: v('text'),
+            labelBoxBkgColor: v('note-bg'),
+            labelTextColor: v('text'),
+            labelBoxBorderColor: v('node-border'),
+            loopTextColor: v('text'),
+            activationBkgColor: v('secondary-bg'),
+            activationBorderColor: v('node-border'),
+            titleColor: v('node-text'),
+            // Gantt: Mermaid's own done (lightgrey) and critical (red) bars clash with theme text.
+            taskBkgColor: v('task-bg'),
+            taskBorderColor: v('task-border'),
+            taskTextColor: v('task-text'),
+            taskTextLightColor: v('task-text'),
+            taskTextDarkColor: v('task-text'),
+            taskTextOutsideColor: v('text'),
+            taskTextClickableColor: v('link'),
+            activeTaskBkgColor: v('active-bg'),
+            activeTaskBorderColor: v('active-border'),
+            doneTaskBkgColor: v('done-bg'),
+            doneTaskBorderColor: v('done-border'),
+            critBkgColor: v('crit-bg'),
+            critBorderColor: v('crit-border'),
+            todayLineColor: v('crit-border'),
+            vertLineColor: v('link'),
+            sectionBkgColor: v('section-bg'),
+            sectionBkgColor2: v('section-bg-2'),
+            altSectionBkgColor: v('section-alt-bg'),
+            excludeBkgColor: v('secondary-bg'),
+            gridColor: v('grid'),
+            ...series,
+          })
+        }
+
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'loose',
-          theme: isDark ? 'base' : 'default',
-          themeVariables: isDark ? darkThemeVariables : undefined,
+          theme: palette || isDark ? 'base' : 'default',
+          themeVariables,
+          // Mermaid brightens timeline events by 20% (filter: brightness(120%) on .eventWrapper),
+          // which would take the categorical fills below the contrast the theme set for their labels.
+          ...(palette ? { themeCSS: '.eventWrapper { filter: none; }' } : {}),
         })
 
         const { svg: outputSvg } = await mermaid.render(`mermaid_${id}`, chart)

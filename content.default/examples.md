@@ -24,7 +24,7 @@ For added security, files and assets can be password protected.
 
 ## Cookie persistence
 
-This site stores passwords in browser cookies so you don't have to re-enter them on every visit. Cookies are scoped to `ehlers.tv`, last **90 days**, and are set with `SameSite=Strict; Secure`. No tracking, no third parties — the only thing stored is the password you already typed.
+This site stores passwords in browser cookies so you don't have to re-enter them on every visit. The cookies belong to this site's own address only, last **90 days**, and are set with `SameSite=Strict; Secure`. They track nothing and go to no third party: the only thing stored is the password you already typed.
 
 The admin password is also saved as a cookie when you sign in to `/admin`.
 

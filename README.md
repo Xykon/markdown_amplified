@@ -13,7 +13,8 @@ This project renders markdown documents from Amazon S3 or the `content/` directo
 - Table of contents sidebar — collapsible tree, active heading tracking, desktop/mobile toggle
 - Site map sidebar — BFS-based content discovery, password-aware, shows loading state while indexing
 - Download button for source markdown files
-- Light/dark theme toggle with persistence
+- Light/dark mode toggle with persistence
+- Site themes chosen per site in `content-security.json` (built in: `valley`, the AI Valley analytics look), applied on the server with no flash
 - Frontmatter-driven SEO metadata (title, description, keywords, canonical, robots, Open Graph image)
 - JSON-LD structured data injection from frontmatter
 - Built-in `robots.txt`, `sitemap.xml`, and `llms.txt` endpoints for search engines and AI agents
@@ -34,13 +35,17 @@ This project renders markdown documents from Amazon S3 or the `content/` directo
 7. [Content Security](#content-security)
 8. [Home Button](#home-button)
 9. [Navigation Sidebar](#navigation-sidebar)
-10. [S3 Content Backend](#s3-content-backend)
-11. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
-12. [S3 Deployment Workflow](#s3-deployment-workflow)
-13. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
-14. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
-15. [Operational Notes](#operational-notes)
-16. [Troubleshooting](#troubleshooting)
+10. [Persistent Password Cookies](#persistent-password-cookies)
+11. [Google Analytics](#google-analytics)
+12. [Themes](#themes)
+13. [Admin Interface](#admin-interface)
+14. [S3 Content Backend](#s3-content-backend)
+15. [Deployment to AWS Amplify](#deployment-to-aws-amplify)
+16. [S3 Deployment Workflow](#s3-deployment-workflow)
+17. [Public Upstream + Private Production Workflow](#public-upstream--private-production-workflow)
+18. [Syncing Public Changes into Private Repo](#syncing-public-changes-into-private-repo)
+19. [Operational Notes](#operational-notes)
+20. [Troubleshooting](#troubleshooting)
 
 ## Project Goals
 
@@ -78,7 +83,7 @@ Examples:
 	- Home button (configurable target)
 	- Optional site root globe button
 	- Download source button
-	- Theme toggle
+	- Light/dark toggle
 - Navigation sidebar:
 	- Table of contents panel — collapsible tree, active heading tracking
 	- Site map panel — BFS-based discovery of all linked files
@@ -156,13 +161,18 @@ app/
 		route.js             # Serves markdown files for download (security-aware)
 	gate/[...slug]/
 		page.js              # Asset gate page
-	Header.js              # Top bar: home, site root, nav toggles, download, theme
+	Header.js              # Top bar: home, site root, nav toggles, download, light/dark
 	MarkdownShell.js       # Shared shell with sidebar state and layout
 	SecurityGate.js        # Client-side password gate and stale-tab date check
 	SiteMap.js             # Site map panel — BFS tree with loading state
 	TableOfContents.js     # TOC panel — collapsible tree with active heading tracking
-	ThemeContext.js        # Theme persistence and toggle
-	globals.css            # Full UI and token styling
+	ThemeContext.js        # Light/dark mode persistence and toggle (data-theme on <html>)
+	globals.css            # Full UI and token styling (the default look)
+	themes/
+		base.css             # Shared theme layer: component colours derived from a theme's seeds
+		hljs.css             # Syntax colours for every theme, from --hl-* tokens
+		valley.css           # The valley theme (AI Valley analytics look)
+		sgwireless.css       # Inactive skeleton for a corporate theme (placeholder colours)
 	page.js                # Root route for content/index.md
 	pw-cookie.js           # Cookie helpers for persistent password storage
 
@@ -180,6 +190,7 @@ content-security.json.example  # Annotated example covering all rule types
 
 lib/
 	security.mjs           # Rule matching, display config, AES-256-GCM encryption
+	themes.mjs             # Registry of site themes (THEMES) and the theme-name check
 	content-provider.mjs   # FilesystemProvider and S3Provider (with CRUD)
 ```
 
@@ -513,6 +524,45 @@ Set `ga_measurement_id` in `content-security.json` to turn on Google Analytics 4
 | `ga_privacy_label` | string | `"Privacy Policy"` | Text for that link. |
 
 With the banner on, **nothing is fetched from Google until the visitor accepts**: the page carries no Google script, and `gtag.js` is loaded in the browser only after *Accept* (or, on a later visit, when an earlier *Accept* is stored). Advertising consent is always denied, and Google signals and ad personalisation are off. Once a choice is made, a small *Cookie settings* button stays in the corner so the visitor can change it; turning analytics off deletes the `_ga` cookies and reloads the page without the tag. The choice itself is kept in `localStorage` (`ma_cookie_consent`), not in a cookie.
+
+## Themes
+
+A site can pick a **theme**: a palette and a few shape choices (font stack, corner radii) for every page, in both light and dark mode. Set `theme` in `content-security.json`:
+
+```json
+{
+  "theme": "valley"
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `theme` | string | `"default"` | `"valley"`: the look of the AI Valley analytics dashboard: warm dark grays, warm-gray prose under white headings, a blue accent, flat panels and the system font, with a matching warm-neutral light mode. `"default"`, an empty string or no key: the standard look. Case and surrounding spaces are ignored. Any other value falls back to the default and logs `[theme] unknown theme "…" in content-security.json; using the default theme` once per config load. |
+
+- **Applied on the server.** The page arrives as `<html data-palette="valley">`, so the first paint already has the theme's palette; there is no flash of the default colours. The visitor's light/dark toggle keeps working inside the theme, and their choice is kept as before (`localStorage.theme`).
+- **Works with every content backend.** The theme is read from the same `content-security.json` as the rest of the configuration: the root file when there is one, otherwise the content provider's copy, which is the S3 bucket on S3-backed sites. A change in the bucket shows within 60 seconds (the config cache). The prerendered 404 page keeps the theme it was built with until the next build, as it does for the GA ID.
+- **No theme, no change.** Without `theme` the viewer looks exactly as it did before themes existed: every themable value in `globals.css` reads `var(--token, <the old value>)`, and only theme files define those tokens (`node scripts/check-themes.mjs --identity main` proves it).
+- **Accessible.** Every text and control colour in `valley` meets WCAG 2.2 AA (4.5:1 for text, 3:1 for borders, focus rings and other UI parts) in both modes, Mermaid diagrams included. Prose links are always underlined, because link and body colours are close.
+- **Prints light.** A themed page prints with the theme's light palette whatever the screen mode, so tables, code frames and rules stay visible on paper.
+
+### Adding a theme
+
+Each theme is one file, `app/themes/<name>.css`, with every selector scoped under `html[data-palette='<name>']`, so it does nothing on other sites. A theme sets about 40 colour tokens per mode; `app/themes/base.css` derives the component colours (navigation, buttons, fields, cookie banner, Mermaid and so on) from them, and `app/themes/hljs.css` colours code from the `--hl-*` tokens. `app/themes/sgwireless.css` is a ready-to-fill skeleton (placeholder colours, not SG Wireless branding; inactive until registered).
+
+1. Copy `app/themes/sgwireless.css` (or `valley.css` as a worked example) to `app/themes/<name>.css` and replace the name in every selector (lowercase, `[a-z0-9-]`).
+2. Fill the seed tokens in the light block and in the dark block, then copy the dark declarations into the second dark block unchanged (one serves the OS setting before the page loads, the other the explicit toggle). Keep the blocks' selectors and `@media screen` wrappers as they are: they make print use the light palette. Mermaid's categorical colours (`--mermaid-cat-0` … `-7` and `--mermaid-cat-ink`) are optional; see `valley.css`.
+3. Override derived component colours only where needed, for example a brand-coloured Accept button (`--consent-accent`). A token set in the light block must also be set in both dark blocks.
+4. Optionally change the font stack and radii. A brand font must be self-hosted under `public/`: the Content Security Policy only allows fonts from the site itself.
+5. Register it: add `'<name>'` to `THEMES` in `lib/themes.mjs` and `import './themes/<name>.css'` in `app/layout.js`.
+6. Check it:
+   - `node scripts/check-themes.mjs` lints the theme files (scoping, both modes complete, dark blocks identical, every highlight.js selector covered, registry and imports in step);
+   - `node scripts/check-themes.mjs --identity main` proves the default look is unchanged against `main`;
+   - `node scripts/check-themes.mjs --contrast http://localhost:3000/` measures every colour pair and the real page in light and dark (run it with the theme selected);
+   - `node scripts/check-consent.mjs http://localhost:3000/` proves the cookie banner still gates Google Analytics.
+7. Commit and push. A theme is code: it reaches a site only with a deploy, and pushing `main` deploys it to every Amplify app built from this repository (inert on the sites that do not select it).
+8. Select it with `"theme": "<name>"` in the site's `content-security.json` (in the S3 bucket for an S3-backed site). Selecting it before the deploy is harmless: the site keeps the default look and logs the unknown-theme line until the theme arrives.
+
+The design note [THEMES.md](THEMES.md) has the token tables, the contrast figures, the rules a theme file must follow and why.
 
 ## Admin Interface
 
@@ -865,9 +915,9 @@ Check:
 3. URL uses encoded spaces (`%20`) in browsers
 4. Deployment has completed successfully and is serving the latest build
 
-### Theme toggle changes but Mermaid style does not update
+### Light/dark toggle changes but Mermaid style does not update
 
-Mermaid is rendered client-side and should re-render on theme changes. If stale, hard refresh once and verify you are on latest deployed assets.
+Mermaid is rendered client-side and should re-render on light/dark changes. If stale, hard refresh once and verify you are on latest deployed assets.
 
 ### Markdown file downloads fail
 
