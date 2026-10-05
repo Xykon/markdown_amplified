@@ -99,7 +99,17 @@ async function openPage() {
     }
     return false
   }
-  return { google, evaluate, load, reload, gaCookies, waitFor }
+  // The banner waits for the first scroll once a page can scroll (or 1.2 s on a short one), and a
+  // slow page may only become scrollable after a single early scroll: keep scrolling while waiting.
+  const waitForBanner = async (ms = 10000) => {
+    for (let t = 0; t < ms; t += 250) {
+      if (await evaluate("!!document.querySelector('.sgw-cookie-banner--visible .sgw-cookie-accept')")) return true
+      await evaluate('window.scrollBy(0, 200)')
+      await sleep(250)
+    }
+    return false
+  }
+  return { google, evaluate, load, reload, gaCookies, waitFor, waitForBanner }
 }
 
 try {
@@ -107,9 +117,7 @@ try {
   {
     const p = await openPage()
     await p.load(url)
-    // The banner shows after a scroll, or after 1.2 s on a page too short to scroll.
-    await p.evaluate('window.scrollBy(0, 400)')
-    const banner = await p.waitFor("!!document.querySelector('.sgw-cookie-banner--visible .sgw-cookie-accept')")
+    const banner = await p.waitForBanner()
     check(banner, 'the banner appears')
     check(p.google.length === 0, `no request to Google before a choice (${p.google.length})`)
     check((await p.gaCookies()).length === 0, 'no _ga cookie before a choice')
@@ -125,8 +133,7 @@ try {
   {
     const p = await openPage()
     await p.load(url)
-    await p.evaluate('window.scrollBy(0, 400)')
-    await p.waitFor("!!document.querySelector('.sgw-cookie-banner--visible .sgw-cookie-accept')")
+    check(await p.waitForBanner(), 'the banner appears again in a fresh browser')
     check(p.google.length === 0, 'no request to Google before Accept')
     await p.evaluate("document.querySelector('.sgw-cookie-accept').click()")
     const loaded = await p.waitFor('!!window.google_tag_manager || document.cookie.includes("_ga=")')
