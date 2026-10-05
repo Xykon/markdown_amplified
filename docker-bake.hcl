@@ -5,14 +5,14 @@
 #
 # The builder must use the `docker-container` driver with QEMU registered, or an arm64 build either
 # refuses outright or quietly produces amd64 — which shows up only on the instance, as a container
-# that exits immediately with "exec format error". `scripts/ec2-build-push.sh` in the ai-town
-# repository sets both up and is reusable as-is:
+# that exits immediately with "exec format error". Set both up once:
 #
-#   docker buildx create --name ai-valley-cross --driver docker-container --bootstrap
-#   docker buildx use ai-valley-cross
+#   docker run --privileged --rm tonistiigi/binfmt --install arm64
+#   docker buildx create --name cross --driver docker-container --bootstrap
+#   docker buildx use cross
 #
-# This repository is public on Docker Hub, unlike cehlers/ai-valley. `.dockerignore` is what makes
-# that safe, and it is worth re-reading before adding anything to this directory.
+# The image is public on Docker Hub. `.dockerignore` is what makes that safe, and it is worth
+# re-reading before adding anything to this directory.
 
 variable "TAG" { default = "latest" }
 variable "IMAGE" { default = "cehlers/simple_markdown" }

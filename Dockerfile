@@ -16,10 +16,10 @@
 #
 # ## Why the builder pins $BUILDPLATFORM
 #
-# The target is a Graviton instance and this workstation is amd64, so the runtime stage is emulated
-# through QEMU. A Next.js build is JavaScript producing JavaScript and has no architecture, so it
-# runs natively and only the dependency install is emulated. See `scripts/ec2-build-push.sh` in the
-# ai-town repository for the QEMU and buildx setup this needs.
+# The target is an arm64 (Graviton) instance built from an amd64 workstation, so the runtime stage is
+# emulated through QEMU. A Next.js build is JavaScript producing JavaScript and has no architecture,
+# so it runs natively and only the dependency install is emulated. docker-bake.hcl lists the QEMU
+# and buildx setup this needs.
 
 # ── Dependencies, on the build host's own architecture ───────────────────────────────────────
 FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS deps
