@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css'
 // conditionally); each file is scoped under html[data-palette='<name>'] and inert elsewhere.
 import './themes/base.css'
 import './themes/hljs.css'
+import './themes/valley.css'
 import { ThemeProvider } from './ThemeContext'
 import { loadAnalyticsConfig, loadGlobalSeo, loadGlobalSiteHeader, loadThemeConfig } from '../lib/security.mjs'
 import CookieBanner from './CookieBanner'
