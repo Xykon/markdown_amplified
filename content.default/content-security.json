@@ -12,7 +12,6 @@
     "enabled": true,
     "prefix": "ma",
     "maxAge": 7776000,
-    "domain": "ehlers.tv",
     "storeAdmin": true
   },
   "rules": [

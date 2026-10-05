@@ -491,6 +491,29 @@ Add a `cookies` block to `content-security.json`:
 
 Cookies are set with `SameSite=Strict` and, when the site is served over HTTPS, `Secure`. They are regular JavaScript-readable cookies (not `HttpOnly`) because unlock passwords must be accessible to the client-side AES decryption code.
 
+## Google Analytics
+
+Set `ga_measurement_id` in `content-security.json` to turn on Google Analytics 4:
+
+```json
+{
+  "ga_measurement_id": "G-XXXXXXXXXX",
+  "ga_consent_banner": true,
+  "ga_privacy_url": "https://example.com/privacy",
+  "ga_privacy_label": "Privacy Policy"
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ga_measurement_id` | string | — | GA4 measurement ID (`G-…`). Without it, nothing analytics-related is loaded and no banner is shown. |
+| `ga_consent_banner` | boolean | `true` | Ask before measuring. Set to `false` only where consent is not required (an intranet, say): Analytics then loads at once. |
+| `ga_cookie_domain` | string | host only | Leave unset to keep `_ga` on the exact hostname. Set a parent domain (e.g. `"example.com"`) only if every site under it should share the cookie. |
+| `ga_privacy_url` | string | — | Link to your privacy or cookie policy, shown in the banner and the preferences dialog. |
+| `ga_privacy_label` | string | `"Privacy Policy"` | Text for that link. |
+
+With the banner on, **nothing is fetched from Google until the visitor accepts**: the page carries no Google script, and `gtag.js` is loaded in the browser only after *Accept* (or, on a later visit, when an earlier *Accept* is stored). Advertising consent is always denied, and Google signals and ad personalisation are off. Once a choice is made, a small *Cookie settings* button stays in the corner so the visitor can change it; turning analytics off deletes the `_ga` cookies and reloads the page without the tag. The choice itself is kept in `localStorage` (`ma_cookie_consent`), not in a cookie.
+
 ## Admin Interface
 
 The admin interface lives at `/admin` and lets you browse the active content tree, inspect per-file security flags, create folders, upload files, and delete files or folders. It uses the same content backend as the site itself, so what you can edit depends on whether the app is reading from S3 or from the local filesystem.

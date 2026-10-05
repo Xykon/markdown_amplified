@@ -1,22 +1,36 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { clearGaCookies, loadGtag } from './gtag'
 
 const CONSENT_KEY = 'ma_cookie_consent'
 const CONSENT_DATA_KEY = 'ma_cookie_consent_data'
 
-export default function CookieBanner({ privacyUrl, privacyLabel }) {
+export default function CookieBanner({ gaId, cookieDomain, consentBanner = true, privacyUrl, privacyLabel }) {
+  const [ready, setReady] = useState(false)
   const [decided, setDecided] = useState(true)
   const [bannerVisible, setBannerVisible] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [analyticsChecked, setAnalyticsChecked] = useState(false)
 
   useEffect(() => {
-    let hasDecided = false
+    // A site that turns the banner off has decided consent is not needed (an intranet, say).
+    if (!consentBanner) {
+      loadGtag(gaId, cookieDomain)
+      return
+    }
+
+    let stored = null
     try {
-      hasDecided = localStorage.getItem(CONSENT_KEY) !== null
+      stored = localStorage.getItem(CONSENT_KEY)
     } catch (e) {}
-    if (hasDecided) return
+    setReady(true)
+    if (stored === 'granted') {
+      // A host-only setup first drops any _ga an older version left on the parent domain.
+      if (cookieDomain === 'none') clearGaCookies({ parentsOnly: true })
+      loadGtag(gaId, cookieDomain)
+    }
+    if (stored !== null) return
 
     setDecided(false)
 
@@ -71,13 +85,16 @@ export default function CookieBanner({ privacyUrl, privacyLabel }) {
       localStorage.setItem(CONSENT_KEY, analytics ? 'granted' : 'denied')
     } catch (e) {}
     window.sgwCookieConsent = analytics ? 'granted' : 'denied'
-    if (typeof window.gtag === 'function') {
-      if (analytics) {
-        window.gtag('consent', 'update', { analytics_storage: 'granted' })
-        window.gtag('event', 'page_view')
-      } else {
-        window.gtag('consent', 'update', { analytics_storage: 'denied' })
-      }
+    if (analytics) {
+      if (cookieDomain === 'none') clearGaCookies({ parentsOnly: true })
+      loadGtag(gaId, cookieDomain) // its config call sends the page view
+      return
+    }
+    clearGaCookies()
+    // Withdrawn after the tag ran: gtag.js cannot be unloaded, so the page reloads without it.
+    if (window.__maGtagLoaded) {
+      window.gtag('consent', 'update', { analytics_storage: 'denied' })
+      window.location.reload()
     }
   }
 
@@ -105,13 +122,21 @@ export default function CookieBanner({ privacyUrl, privacyLabel }) {
   function saveModal() {
     saveAndApply(analyticsChecked)
     setShowModal(false)
-    hideBanner()
+    if (!decided) hideBanner()
   }
 
-  if (decided) return null
+  if (!consentBanner || !ready) return null
 
   return (
     <>
+      {decided && !showModal && (
+        // Withdrawing consent must be as easy as giving it, so the choice stays one click away.
+        <button type="button" className="sgw-cookie-settings" onClick={openModal}>
+          Cookie settings
+        </button>
+      )}
+
+      {!decided && <>
       <div className={`sgw-cookie-backdrop${bannerVisible ? ' visible' : ''}`} />
 
       <div
@@ -138,6 +163,7 @@ export default function CookieBanner({ privacyUrl, privacyLabel }) {
           </div>
         </div>
       </div>
+      </>}
 
       {showModal && (
         <div

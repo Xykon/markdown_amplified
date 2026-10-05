@@ -19,30 +19,25 @@ export async function generateMetadata() {
 }
 
 export default async function RootLayout({ children }) {
+  // No Google script is part of the page: CookieBanner loads gtag.js in the browser only once the
+  // visitor has accepted analytics (or at once when the site turns the banner off), so nothing
+  // reaches Google before a choice.
   const analytics = await loadAnalyticsConfig()
-
-  const consentInit = analytics ? `
-window.dataLayer=window.dataLayer||[];
-function gtag(){dataLayer.push(arguments);}
-gtag('consent','default',{'analytics_storage':'denied','wait_for_update':500});
-try{if(localStorage.getItem('ma_cookie_consent')==='granted')gtag('consent','update',{'analytics_storage':'granted'});}catch(e){}
-` : null
-
-  const gtagConfig = analytics ? `gtag('js',new Date());gtag('config','${analytics.gaId}');` : null
 
   return (
     <html lang="en">
-      <head>
-        {analytics && <>
-          <script dangerouslySetInnerHTML={{ __html: consentInit }} />
-          {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-          <script async src={`https://www.googletagmanager.com/gtag/js?id=${analytics.gaId}`} />
-          <script dangerouslySetInnerHTML={{ __html: gtagConfig }} />
-        </>}
-      </head>
+      <head />
       <body>
         <ThemeProvider>{children}</ThemeProvider>
-        {analytics?.consentBanner && <CookieBanner privacyUrl={analytics.privacyUrl} privacyLabel={analytics.privacyLabel} />}
+        {analytics && (
+          <CookieBanner
+            gaId={analytics.gaId}
+            cookieDomain={analytics.cookieDomain}
+            consentBanner={analytics.consentBanner}
+            privacyUrl={analytics.privacyUrl}
+            privacyLabel={analytics.privacyLabel}
+          />
+        )}
       </body>
     </html>
   )

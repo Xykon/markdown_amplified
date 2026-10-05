@@ -1,8 +1,8 @@
 # Privacy Policy
 
-*Last updated: June 2026*
+*Last updated: October 2026*
 
-This privacy policy applies exclusively to websites hosted under the **ehlers.tv** domain and its subdomains. It explains how these websites collect, use, and protect information about visitors.
+This privacy policy applies to this site, the Markdown Amplified demo. It explains how the site collects, uses, and protects information about visitors.
 
 ---
 
@@ -36,9 +36,11 @@ Analytics data is used solely to understand how visitors interact with the site 
 | Cookie | Purpose | Duration |
 |--------|---------|----------|
 | `_ga`, `_ga_*` | Google Analytics — distinguishes unique visitors | 2 years |
-| `ma_cookie_consent` | Stores your cookie consent choice | Local storage |
+| `ma_cookie_consent`, `ma_cookie_consent_data` | Store your cookie consent choice | Local storage, until you clear it |
+| `ma-unlock-*` | Remembers the password you entered for a protected demo page, so you are not asked again; set only when you unlock one | 90 days |
+| `ma-admin` | Keeps you signed in to the demo's read-only admin; set only when you sign in | 90 days |
 
-Analytics cookies are only set after you explicitly accept them. You can withdraw consent at any time by clearing your browser's local storage for this site.
+Nothing is loaded from Google until you accept analytics: before that, the site makes no request to Google at all. If you accept, the `_ga` cookies are set for this site's own address only. You can change your choice at any time with the **Cookie settings** button in the corner of every page; turning analytics off deletes the `_ga` cookies.
 
 Google Analytics data is processed by Google LLC under their [Privacy Policy](https://policies.google.com/privacy).
 
