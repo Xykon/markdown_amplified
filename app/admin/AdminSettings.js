@@ -322,7 +322,7 @@ export default function AdminSettings({ readonly, onLogout }) {
               <input className="admin-input" type="password" value={form.adminPasswordConfirm} onChange={e => set('adminPasswordConfirm', e.target.value)} autoComplete="new-password" />
             </Field>
             {form.adminPassword && (
-              <p className="admin-field-help" style={{ color: '#cf222e', alignSelf: 'flex-end', paddingBottom: 4 }}>
+              <p className="admin-field-help" style={{ color: 'var(--danger, #cf222e)', alignSelf: 'flex-end', paddingBottom: 4 }}>
                 Changing the password will require signing in again.
               </p>
             )}

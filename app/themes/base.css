@@ -1,0 +1,176 @@
+/*
+ * Shared layer for every site theme (THEMES.md §1.6). Inert without a theme: every selector is
+ * scoped to html[data-palette], which the server sets only when content-security.json names one.
+ *
+ * 1. Role defaults. Component colours derived from the seed tokens a theme defines in both modes
+ *    (THEMES.md §2.2). :where() keeps this block at specificity (0,0,0), so any theme block
+ *    overrides a role, and globals.css never defines these names, so nothing ties with the
+ *    default. All tokens live on <html>, so var() resolves against the current mode's seeds.
+ * 2. Rules the default does not have (heading colour, selection, focus rings, scrollbars, the
+ *    gate button hover and two neutralisers for OS-dark rules in globals.css).
+ */
+
+:where(html[data-palette]) {
+  --code-inline-fg: var(--text-strong);
+  --blockquote-fg: var(--muted);
+  --blockquote-border: var(--border);
+  --header-shadow: none;
+
+  /* Sidebar: TOC and site map */
+  --nav-card-bg: var(--surface-soft);
+  --nav-hover-fg: var(--text-strong);
+  --nav-hover-bg: var(--hover-bg);
+  --nav-hover-border: var(--border-strong);
+  --nav-active-fg: var(--text-strong);
+  --nav-active-bg: var(--accent-soft);
+  --nav-active-border: var(--accent);
+  --chip-hover-border: var(--border-strong);
+  --hover-bg: color-mix(in srgb, var(--text-strong) 6%, transparent);
+
+  /* Tool buttons: header, copy, Mermaid toolbar and overlay, admin */
+  --control-bg: var(--surface-soft);
+  --control-border: var(--border);
+  --control-fg: var(--text);
+  --control-hover-bg: var(--surface-hover);
+  --control-hover-border: var(--border-strong);
+  --control-hover-fg: var(--text-strong);
+  --control-pressed-bg: var(--accent-soft);
+  --control-pressed-border: var(--accent);
+  --control-pressed-fg: var(--text-strong);
+
+  /* Fields and buttons */
+  --field-bg: var(--surface-soft);
+  --field-border: var(--border-strong);
+  --focus-ring-shadow: none;
+  --button-primary-bg: var(--accent);
+  --button-primary-fg: var(--on-accent);
+  --button-primary-hover-bg: var(--accent-hover);
+  --button-primary-hover-opacity: 1;
+  --danger-hover-bg: color-mix(in srgb, var(--danger) 14%, transparent);
+  --danger-hover-fg: var(--danger);
+  --danger-bg: color-mix(in srgb, var(--danger) 12%, transparent);
+  --danger-border: color-mix(in srgb, var(--danger) 45%, transparent);
+  --danger-fg: var(--danger);
+  --success-bg: color-mix(in srgb, var(--success) 12%, transparent);
+  --success-border: color-mix(in srgb, var(--success) 45%, transparent);
+  --success-fg: var(--success);
+
+  /* Overlays */
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --backdrop-soft: rgba(0, 0, 0, 0.3);
+  --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  /* Tables */
+  --table-head-bg: var(--surface-soft);
+  --table-head-fg: var(--text-strong);
+  --table-row-bg: var(--surface);
+  --table-row-alt-bg: var(--surface);
+
+  /* Cookie banner, preferences modal and Cookie settings pill (classes and visibility untouched) */
+  --consent-accent: var(--accent);
+  --consent-accent-hover: var(--accent-hover);
+  --consent-on-accent: var(--on-accent);
+  --consent-outline-border: var(--border-strong);
+  --consent-outline-hover-bg: var(--surface-hover);
+  --consent-outline-hover-fg: var(--text-strong);
+  --toggle-track-bg: var(--surface-soft);
+  --toggle-track-border: var(--border-strong);
+  --toggle-knob: var(--muted);
+  --toggle-on-bg: var(--accent);
+  --toggle-on-knob: var(--on-accent);
+  --toggle-disabled-bg: var(--surface-hover);
+  --toggle-disabled-knob: var(--muted);
+
+  /* Only themes use these */
+  --selection-bg: color-mix(in srgb, var(--accent) 35%, transparent);
+  --scrollbar-thumb: var(--border-strong);
+
+  /* Mermaid reads these from JavaScript (MarkdownRenderer.js); they must resolve to plain colours
+     (hex or rgb, never color-mix), because Mermaid does its own colour maths on them. */
+  --mermaid-font: var(--font-sans, 'IBM Plex Sans', 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif);
+  --mermaid-bg: var(--code-bg);
+  --mermaid-node-bg: var(--surface-soft);
+  --mermaid-node-border: var(--muted);
+  --mermaid-node-text: var(--text-strong);
+  --mermaid-line: var(--muted);
+  --mermaid-text: var(--text);
+  --mermaid-secondary-bg: var(--surface);
+  --mermaid-tertiary-bg: var(--surface-hover);
+  --mermaid-note-bg: var(--surface-hover);
+  --mermaid-note-text: var(--text-strong);
+  --mermaid-note-border: var(--muted);
+  --mermaid-cluster-bg: var(--surface);
+  --mermaid-cluster-border: var(--muted);
+}
+
+/* ── Rules only themes get ─────────────────────────────────────────────── */
+
+/* Two text levels: prose in --text, headings and emphasis in --text-strong (h6 stays muted).
+   Only Markdown headings, which carry no class: the admin's classed headings keep their colours. */
+html[data-palette] .markdown-body :is(h1, h2, h3, h4, h5):not([class]),
+html[data-palette] .markdown-body :is(strong, b, summary, dt),
+html[data-palette] .header-title {
+  color: var(--text-strong);
+}
+html[data-palette] .markdown-body a :is(strong, b) {
+  color: inherit;
+}
+
+/* A code block without a language has no .hljs class; give it the syntax foreground too. */
+html[data-palette] .markdown-body pre code {
+  color: var(--hl-fg);
+}
+
+html[data-palette] ::selection {
+  background-color: var(--selection-bg);
+}
+
+html[data-palette] {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+html[data-palette] :is(.sidebar, .markdown-body pre, .mermaid-chart, .markdown-body table) {
+  scrollbar-width: thin;
+}
+
+/* One visible focus ring everywhere. The more specific default rings (copy button, task checkbox)
+   still win and already read --accent. Fields draw it inset, like analytics' .field. */
+html[data-palette] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+html[data-palette] :is(input:not([type='checkbox']), textarea, select):focus-visible {
+  outline-offset: -1px;
+}
+/* The cookie toggle's input is clipped out of sight, so its label carries the ring. */
+html[data-palette] .sgw-toggle-label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+html[data-palette] .security-gate-button:hover:not(:disabled) {
+  background: var(--button-primary-hover-bg);
+}
+
+/* globals.css repaints a hovered task checkbox in OS dark even when the toggle says light, and its
+   background shorthand also wipes a checked box's tick. Themes keep both in the current mode. */
+html[data-palette] .markdown-body input[type='checkbox']:hover {
+  background: var(--accent-soft);
+}
+html[data-palette] .markdown-body input[type='checkbox']:checked {
+  background: var(--accent) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z'/%3e%3c/svg%3e") center / 0.85em no-repeat;
+}
+
+/* Forced colours (Windows contrast themes): keep the current nav item and focus visible. */
+@media (forced-colors: active) {
+  /* Forced colours paint every link's transparent left bar; only the current item keeps one. */
+  html[data-palette] :is(.toc-link, .sitemap-link) {
+    border-left-color: Canvas;
+  }
+  html[data-palette] :is(.toc-link.active, .sitemap-link.is-current) {
+    border-left-color: Highlight;
+  }
+  html[data-palette] :focus-visible,
+  html[data-palette] .sgw-toggle-label:has(input:focus-visible) {
+    outline-color: Highlight;
+  }
+}

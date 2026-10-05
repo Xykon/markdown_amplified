@@ -1,0 +1,142 @@
+/*
+ * highlight.js colours for every site theme (THEMES.md §1.7), from 15 --hl-* tokens a theme sets
+ * in both modes. globals.css colours highlight.js in three overlapping blocks (light, OS dark,
+ * explicit dark); this file mirrors every selector in them as html[data-palette] .hljs <selector>,
+ * which out-ranks a default selector X and its dark form html[data-theme='dark'] X alike, so a
+ * themed page never shows a default syntax colour in either mode. scripts/check-themes.mjs checks
+ * that every .hljs selector in globals.css has its mirror here.
+ *
+ * Weights: the default bolds keywords, titles, meta and sections. Themes set them in regular weight
+ * (--hl-keyword-weight may bring bold back), sections in 600, strong in 700; comments are italic.
+ */
+
+html[data-palette] code.hljs {
+  color: var(--hl-fg);
+  background: transparent;
+  padding: 0;
+}
+
+/* Foreground */
+html[data-palette] .hljs .hljs-subst,
+html[data-palette] .hljs .hljs-emphasis,
+html[data-palette] .hljs .hljs-strong,
+html[data-palette] .hljs .hljs-operator,
+html[data-palette] .hljs .hljs-punctuation {
+  color: var(--hl-fg);
+}
+html[data-palette] .hljs .hljs-subst {
+  font-weight: var(--hl-keyword-weight, 400);
+}
+html[data-palette] .hljs .hljs-emphasis {
+  font-style: italic;
+}
+html[data-palette] .hljs .hljs-strong {
+  font-weight: 700;
+}
+
+/* Keywords */
+html[data-palette] .hljs .hljs-keyword,
+html[data-palette] .hljs .hljs-doctag,
+html[data-palette] .hljs .hljs-template-tag,
+html[data-palette] .hljs .hljs-meta .hljs-keyword,
+html[data-palette] .hljs .hljs-variable.language_ {
+  color: var(--hl-keyword);
+}
+html[data-palette] .hljs .hljs-keyword {
+  font-weight: var(--hl-keyword-weight, 400);
+}
+
+/* Types, classes and built-ins */
+html[data-palette] .hljs .hljs-type,
+html[data-palette] .hljs .hljs-title.class_,
+html[data-palette] .hljs .hljs-title.class_.inherited__,
+html[data-palette] .hljs .hljs-class .hljs-title,
+html[data-palette] .hljs .hljs-built_in,
+html[data-palette] .hljs .hljs-builtin,
+html[data-palette] .hljs .hljs-builtin-name {
+  color: var(--hl-type);
+}
+
+/* Titles: functions and ids. A class title stays a type (.hljs-title.class_ and .hljs-class
+   .hljs-title out-rank .hljs-title); a function title inside a class is a title (same
+   specificity as .hljs-class .hljs-title, later rule). */
+html[data-palette] .hljs .hljs-title,
+html[data-palette] .hljs .hljs-title.function_,
+html[data-palette] .hljs .hljs-function .hljs-title,
+html[data-palette] .hljs .hljs-selector-id {
+  color: var(--hl-title);
+}
+html[data-palette] .hljs .hljs-title {
+  font-weight: var(--hl-keyword-weight, 400);
+}
+
+/* Attributes, variables and properties */
+html[data-palette] .hljs .hljs-attr,
+html[data-palette] .hljs .hljs-attribute,
+html[data-palette] .hljs .hljs-variable,
+html[data-palette] .hljs .hljs-template-variable,
+html[data-palette] .hljs .hljs-property,
+html[data-palette] .hljs .hljs-selector-class,
+html[data-palette] .hljs .hljs-selector-attr,
+html[data-palette] .hljs .hljs-selector-pseudo,
+html[data-palette] .hljs .hljs-tag .hljs-attr {
+  color: var(--hl-attr);
+}
+
+/* Strings */
+html[data-palette] .hljs .hljs-string,
+html[data-palette] .hljs .hljs-regexp,
+html[data-palette] .hljs .hljs-meta .hljs-string {
+  color: var(--hl-string);
+}
+
+/* Constants */
+html[data-palette] .hljs .hljs-number,
+html[data-palette] .hljs .hljs-literal,
+html[data-palette] .hljs .hljs-symbol,
+html[data-palette] .hljs .hljs-bullet,
+html[data-palette] .hljs .hljs-link {
+  color: var(--hl-constant);
+}
+
+/* Comments */
+html[data-palette] .hljs .hljs-comment,
+html[data-palette] .hljs .hljs-quote,
+html[data-palette] .hljs .hljs-code,
+html[data-palette] .hljs .hljs-formula {
+  color: var(--hl-comment);
+}
+html[data-palette] .hljs .hljs-comment,
+html[data-palette] .hljs .hljs-quote {
+  font-style: var(--hl-comment-style, italic);
+}
+
+/* Meta (preprocessor lines, shebangs) */
+html[data-palette] .hljs .hljs-meta {
+  color: var(--hl-meta);
+  font-weight: var(--hl-keyword-weight, 400);
+}
+
+/* Markup tags */
+html[data-palette] .hljs .hljs-tag,
+html[data-palette] .hljs .hljs-name,
+html[data-palette] .hljs .hljs-selector-tag {
+  color: var(--hl-tag);
+  font-weight: var(--hl-keyword-weight, 400);
+}
+
+/* Sections (Markdown headings, diff hunks) */
+html[data-palette] .hljs .hljs-section {
+  color: var(--hl-section);
+  font-weight: 600;
+}
+
+/* Diffs */
+html[data-palette] .hljs .hljs-addition {
+  color: var(--hl-add-fg);
+  background-color: var(--hl-add-bg);
+}
+html[data-palette] .hljs .hljs-deletion {
+  color: var(--hl-del-fg);
+  background-color: var(--hl-del-bg);
+}

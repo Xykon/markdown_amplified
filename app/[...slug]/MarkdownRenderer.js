@@ -280,11 +280,54 @@ function MermaidBlock({ chart }) {
           activationBkgColor: '#1f2937',
         }
 
+        // A site theme (data-palette on <html>) supplies Mermaid's colours for both modes through
+        // --mermaid-* tokens (app/themes/base.css), read now so they match the current mode.
+        // Without a theme Mermaid runs exactly as before.
+        const palette = document.documentElement.getAttribute('data-palette')
+        let themeVariables = isDark ? darkThemeVariables : undefined
+        if (palette) {
+          const cs = getComputedStyle(document.documentElement)
+          const v = (name) => cs.getPropertyValue(`--mermaid-${name}`).trim() || undefined
+          // Mermaid copies every key, so a token that is not set is left out rather than passed as undefined.
+          themeVariables = Object.fromEntries(Object.entries({
+            darkMode: isDark,
+            fontFamily: v('font'),
+            background: v('bg'),
+            primaryColor: v('node-bg'),
+            primaryBorderColor: v('node-border'),
+            primaryTextColor: v('node-text'),
+            secondaryColor: v('secondary-bg'),
+            tertiaryColor: v('tertiary-bg'),
+            lineColor: v('line'),
+            textColor: v('text'),
+            mainBkg: v('node-bg'),
+            nodeBorder: v('node-border'),
+            clusterBkg: v('cluster-bg'),
+            clusterBorder: v('cluster-border'),
+            edgeLabelBackground: v('bg'),
+            noteBkgColor: v('note-bg'),
+            noteTextColor: v('note-text'),
+            noteBorderColor: v('note-border'),
+            actorBkg: v('node-bg'),
+            actorBorder: v('node-border'),
+            actorTextColor: v('node-text'),
+            actorLineColor: v('line'),
+            signalColor: v('text'),
+            signalTextColor: v('text'),
+            labelBoxBkgColor: v('note-bg'),
+            labelTextColor: v('text'),
+            labelBoxBorderColor: v('node-border'),
+            loopTextColor: v('text'),
+            activationBkgColor: v('secondary-bg'),
+            activationBorderColor: v('node-border'),
+          }).filter(([, value]) => value !== undefined))
+        }
+
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'loose',
-          theme: isDark ? 'base' : 'default',
-          themeVariables: isDark ? darkThemeVariables : undefined,
+          theme: palette || isDark ? 'base' : 'default',
+          themeVariables,
         })
 
         const { svg: outputSvg } = await mermaid.render(`mermaid_${id}`, chart)
