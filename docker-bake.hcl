@@ -28,8 +28,7 @@ target "markdown" {
   # One platform, not a manifest list: nothing else will run this, and a second doubles a build
   # whose dependency install is already emulated.
   platforms  = ["linux/arm64"]
-  # Layer cache in the registry beside the image, so `npm ci` is not re-run under emulation on
-  # every build. It is the slowest step by a wide margin.
-  cache-from = ["type=registry,ref=${IMAGE}:buildcache"]
-  cache-to   = ["type=registry,ref=${IMAGE}:buildcache,mode=max"]
+  # No registry cache. A `mode=max` cache pushed beside the image carries every stage's layers,
+  # the builder's `COPY . .` among them, so it would publish the whole build context wherever the
+  # image goes. The `cross` builder keeps its own layer cache between builds on this machine.
 }
