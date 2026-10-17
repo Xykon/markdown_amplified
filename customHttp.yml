@@ -6,6 +6,8 @@ customHeaders:
   # so the CSP exists as a second line of defence (script-src 'self'
   # blocks loading external <script src=...>, object-src 'none' blocks
   # plugins, frame-ancestors 'none' prevents click-jacking).
+  # The container image sends the same headers from next.config.js;
+  # a change here belongs there too.
   - pattern: '**/*'
     headers:
       - key: Content-Security-Policy
