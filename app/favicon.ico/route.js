@@ -3,6 +3,10 @@ import path from 'path'
 import { NextResponse } from 'next/server'
 import { getContentProvider } from '../../lib/content-provider.mjs'
 
+// Per request: Next prerenders a /favicon.ico route at build time, which served the build's icon
+// and never the site's own favicon.ico.
+export const dynamic = 'force-dynamic'
+
 const HEADERS = {
   'Content-Type': 'image/x-icon',
   // Cache for 24 h at the browser; CloudFront will respect this too.
